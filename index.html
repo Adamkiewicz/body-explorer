@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Body Explorer">
+<meta name="theme-color" content="#8E7CFF">
+<title>Lenny Bean's Body Explorer</title>
+<style>
+:root{--ink:#3b2a5a;--pink:#FF6FA3;--yellow:#FFD166;--teal:#3DD6C6;--purple:#7C6CF2;--blue:#4DB6FF;--green:#4CC38A}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{font-family:ui-rounded,"SF Pro Rounded","Nunito","Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;color:var(--ink);
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;
+  background:linear-gradient(160deg,#8E7CFF 0%,#6FB6FF 48%,#7FE3D4 100%)}
+button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+#bg{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.cell{position:absolute;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.55),rgba(255,255,255,.12) 60%,rgba(255,255,255,0) 72%);animation:drift linear infinite}
+@keyframes drift{from{transform:translateY(110vh) scale(.9)}to{transform:translateY(-30vh) scale(1.1)}}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;z-index:1;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#top{display:flex;align-items:center;gap:10px;padding:10px 14px 6px}
+.icon-btn{position:relative;width:64px;height:64px;flex:none;border-radius:50%;border:none;background:#fff;box-shadow:0 5px 0 rgba(40,20,90,.18);font-size:30px;display:grid;place-items:center;padding:0}
+.icon-btn:active,.big-btn:active,.level-card:active,.act-card:active,.opt:active,.o-card:active,.sys-card:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(40,20,90,.18)}
+.icon-btn.hidden{visibility:hidden}
+#title{font-size:clamp(20px,3.3vmin,32px);font-weight:900;color:#fff;text-shadow:0 2px 0 rgba(40,20,90,.25);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spacer{flex:1}
+.pill{background:#fff;border-radius:999px;padding:0 18px;height:56px;display:flex;align-items:center;font-weight:900;font-size:24px;box-shadow:0 5px 0 rgba(40,20,90,.18);white-space:nowrap}
+#btnGrown{background:conic-gradient(var(--yellow) calc(var(--p,0) * 1turn),#fff 0)}
+#btnGrown span{width:52px;height:52px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:28px}
+#guide{display:flex;align-items:center;gap:12px;padding:2px 16px 4px}
+#pipWrap{flex:none}
+#pipWrap svg{width:clamp(74px,11.5vmin,112px);height:auto;display:block;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px) rotate(-2deg)}}
+.pip-eyes{animation:blink 4s infinite;transform-box:fill-box;transform-origin:center}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+#pipWrap.talk svg{animation:talk .35s ease-in-out 3}
+@keyframes talk{50%{transform:scale(1.07) rotate(3deg)}}
+#bubble{position:relative;background:#fff;border-radius:26px;padding:10px 12px 10px 20px;flex:1;display:flex;align-items:center;gap:12px;min-height:70px;box-shadow:0 6px 0 rgba(40,20,90,.12)}
+#bubble::before{content:"";position:absolute;left:-14px;top:50%;margin-top:-12px;border:12px solid transparent;border-right:16px solid #fff;border-left:0}
+#bubbleText{flex:1;font-size:clamp(18px,2.7vmin,27px);font-weight:800;line-height:1.25}
+.hear{flex:none;border:none;background:var(--yellow);border-radius:999px;padding:0 18px;height:60px;font-size:22px;font-weight:900;box-shadow:0 4px 0 #E0A83A;display:flex;align-items:center;gap:6px}
+.hear:active{transform:translateY(3px);box-shadow:0 1px 0 #E0A83A}
+#stage{flex:1;min-height:0;position:relative;padding:10px 16px 16px;display:flex;flex-direction:column}
+.big-btn{border:none;border-radius:999px;background:var(--green);color:#fff;font-weight:900;font-size:clamp(22px,3.2vmin,30px);padding:0 30px;min-height:72px;box-shadow:0 6px 0 #2E9A68;display:inline-flex;align-items:center;justify-content:center;gap:10px}
+.big-btn.alt{background:var(--purple);box-shadow:0 6px 0 #5243C2}
+.big-btn.pinkb{background:var(--pink);box-shadow:0 6px 0 #D84C82}
+.big-btn.hidden,.hidden{display:none!important}
+.pulse{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.07)}}
+.home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3vmin;min-height:0}
+.logo{margin:0;text-align:center;color:#fff;font-size:clamp(38px,7.5vmin,76px);line-height:1;font-weight:900;text-shadow:0 4px 0 #5a46c8,0 10px 20px rgba(0,0,0,.18)}
+.logo small{display:block;font-size:.42em;color:#FFE38A;margin-bottom:6px;text-shadow:0 3px 0 #5a46c8}
+.levels{display:flex;gap:2.5vmin;justify-content:center}
+.level-card{position:relative;width:clamp(200px,28vmin,290px);border:none;border-radius:32px;padding:18px 14px;background:#fff;box-shadow:0 8px 0 rgba(40,20,90,.18);display:flex;flex-direction:column;align-items:center;gap:6px;border-top:14px solid var(--c)}
+.lv-emoji{font-size:clamp(54px,9vmin,90px);line-height:1.1}
+.lv-name{font-size:clamp(22px,3.3vmin,32px);font-weight:900}
+.lv-age{font-size:18px;font-weight:800;opacity:.65}
+.lv-stars{font-size:20px;font-weight:900;background:#FFF5D1;border-radius:999px;padding:4px 14px}
+.lv-now{position:absolute;top:-30px;right:-6px;background:var(--yellow);border-radius:999px;padding:4px 12px;font-weight:900;font-size:16px;transform:rotate(6deg);box-shadow:0 3px 0 #E0A83A}
+.lv-text{display:flex;flex-direction:column;align-items:center;gap:6px}
+@media (orientation:portrait){
+  .levels{flex-direction:column;width:min(88vw,560px)}
+  .level-card{width:100%;flex-direction:row;justify-content:flex-start;gap:16px;padding:14px 22px;border-top:none;border-left:16px solid var(--c);text-align:left}
+  .level-card .lv-text{align-items:flex-start;gap:4px;flex:1}
+  .lv-now{top:-12px}
+}
+.map{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vmin;min-height:0}
+.map h2{margin:0;color:#fff;font-size:clamp(28px,5vmin,46px);text-shadow:0 3px 0 rgba(40,20,90,.25)}
+.acts{display:flex;flex-wrap:wrap;gap:2.4vmin;justify-content:center;max-width:1000px}
+.act-card{width:clamp(150px,22vmin,200px);aspect-ratio:1/1.12;border:none;border-radius:34px;background:#fff;box-shadow:0 8px 0 rgba(40,20,90,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px;animation:popIn .5s backwards;animation-delay:calc(var(--i) * .08s)}
+.act-emoji{width:70%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:clamp(46px,7vmin,66px);background:radial-gradient(circle at 35% 30%,#fff,var(--c) 75%)}
+.act-emoji svg{width:70%;height:70%}
+.act-name{font-size:clamp(17px,2.4vmin,22px);font-weight:900;text-align:center;line-height:1.1}
+.stars{font-size:clamp(20px,3vmin,28px);letter-spacing:2px}
+.stars .on{color:#FFC21A;text-shadow:0 2px 0 #E09A00}.stars .off{color:#E4DDF2}
+@keyframes popIn{from{transform:scale(.4);opacity:0}}
+.split{flex:1;display:flex;gap:16px;min-height:0}
+.figure{position:relative;flex:1.15;min-height:0;background:rgba(255,255,255,.4);border-radius:34px;box-shadow:inset 0 0 0 4px rgba(255,255,255,.6)}
+.figure>svg{position:absolute;left:10px;top:10px;width:calc(100% - 20px);height:calc(100% - 20px)}
+.side{flex:1;display:flex;flex-direction:column;gap:14px;justify-content:center;align-items:stretch;min-width:0}
+@media (orientation:portrait){.split{flex-direction:column}.figure{flex:1}.side{flex:none}}
+.info-card{background:#fff;border-radius:30px;padding:18px 20px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;box-shadow:0 6px 0 rgba(40,20,90,.12);min-height:180px;justify-content:center}
+@media (orientation:portrait){.info-card{flex-direction:row;text-align:left;min-height:120px;gap:16px}.info-card .info-body{flex:1}}
+.info-emoji{font-size:clamp(56px,9vmin,84px);line-height:1;width:clamp(70px,11vmin,100px);height:clamp(70px,11vmin,100px);display:grid;place-items:center;flex:none}
+.info-emoji svg{width:100%;height:100%}
+.info-name{font-size:clamp(28px,4.4vmin,44px);font-weight:900;color:var(--purple)}
+.info-text{font-size:clamp(18px,2.6vmin,24px);font-weight:700;line-height:1.3}
+.pop{animation:popIn .35s}
+.progress{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:4px}
+.progress .dot{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 3px rgba(255,255,255,.9)}
+.progress .dot.on{background:var(--yellow);box-shadow:0 2px 0 #E0A83A}
+.progress .dot.cur{background:#fff;transform:scale(1.25)}
+.part{cursor:pointer;transform-box:fill-box;transform-origin:center}
+.part.glow{filter:url(#glowF);animation:bump .45s}
+@keyframes bump{40%{transform:scale(1.08)}}
+.part.wig{animation:wig .45s}
+@keyframes wig{25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
+.quiz{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.2vmin;min-height:0}
+.q-text{background:#fff;border-radius:28px;padding:12px 26px;font-size:clamp(24px,4vmin,40px);font-weight:900;text-align:center;box-shadow:0 6px 0 rgba(40,20,90,.12);max-width:96%}
+.q-pic{font-size:clamp(60px,11vmin,110px);line-height:1;filter:drop-shadow(0 6px 0 rgba(40,20,90,.15))}
+.opts{display:flex;gap:2.6vmin;justify-content:center;flex-wrap:wrap}
+.opt{position:relative;width:clamp(150px,23vmin,220px);height:clamp(160px,25vmin,240px);border:none;border-radius:34px;background:#fff;box-shadow:0 8px 0 rgba(40,20,90,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px;font-size:clamp(64px,11vmin,104px);line-height:1}
+.opt svg{width:70%;height:62%}
+.opt-label{font-size:clamp(18px,2.6vmin,24px);font-weight:900}
+.opt.right{background:#D7FBE6;box-shadow:0 0 0 6px var(--green),0 8px 0 #2E9A68;animation:bump .5s}
+.opt.wrong{opacity:.35;animation:shake .45s}
+.opt.right::after{content:"✔";position:absolute;top:-14px;right:-10px;background:var(--green);color:#fff;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:26px}
+.opts.text{flex-direction:column;align-items:center;gap:14px;width:min(92%,640px)}
+.opts.text .opt{width:100%;height:auto;min-height:76px;flex-direction:row;justify-content:flex-start;padding:10px 24px;font-size:36px;gap:18px;border-radius:26px}
+.opts.text .opt-label{font-size:clamp(20px,3vmin,28px);text-align:left}
+.num{font-size:1em;font-weight:900;color:var(--purple)}
+.dots{font-size:22px;color:var(--pink);letter-spacing:4px}
+.q-fact{background:#FFF5D1;border-radius:22px;padding:12px 22px;font-size:clamp(18px,2.6vmin,24px);font-weight:800;max-width:min(92%,760px);text-align:center;box-shadow:0 4px 0 #EBD48C}
+@keyframes shake{20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}
+.shake{animation:shake .45s}
+.dm{flex:1;display:flex;flex-direction:column;gap:14px;min-height:0}
+.dm-targets{flex:1;min-height:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.dm.two .dm-targets{grid-template-columns:1fr 1fr}
+.dm-target{background:rgba(255,255,255,.88);border-radius:28px;border:5px dashed var(--c);display:flex;flex-direction:column;align-items:center;padding:10px 8px;gap:6px;transition:transform .15s,background .15s;min-height:0;overflow:hidden}
+.dm-target.hover{background:#FFF7D6;transform:scale(1.04);border-style:solid}
+.dm-t-head{display:flex;flex-direction:column;align-items:center;font-size:clamp(46px,7vmin,70px);line-height:1}
+.dm-t-head:empty{display:none}
+.dm-t-label{font-size:clamp(17px,2.5vmin,24px);font-weight:900;text-align:center;line-height:1.1;margin-top:4px}
+.dm-t-sub{font-size:15px;font-weight:700;opacity:.7;text-align:center}
+.dm-drop{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-content:flex-start;flex:1}
+.dm-tray{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;background:rgba(255,255,255,.35);border-radius:28px;padding:12px;min-height:150px}
+.dm-item{width:clamp(108px,15vmin,136px);height:clamp(108px,15vmin,136px);background:#fff;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(46px,7vmin,62px);line-height:1;box-shadow:0 6px 0 rgba(40,20,90,.18);touch-action:none;cursor:grab;padding:6px;transition:transform .15s}
+.dm-item svg{width:62%;height:56%}
+.dm-i-label{font-size:clamp(14px,2vmin,17px);font-weight:900;text-align:center;line-height:1.05;margin-top:4px}
+.dm-item.dragging{opacity:.25}
+.dm-item.selected{box-shadow:0 0 0 6px var(--yellow),0 6px 0 rgba(40,20,90,.18);transform:scale(1.07)}
+.dm-drop .dm-item{width:64px;height:64px;font-size:34px;box-shadow:0 3px 0 rgba(40,20,90,.15);cursor:default;animation:popIn .3s}
+.dm-drop .dm-item .dm-i-label{display:none}
+.ghost{position:fixed!important;z-index:999;pointer-events:none;transform:scale(1.12) rotate(-5deg);box-shadow:0 18px 26px rgba(0,0,0,.25)!important;margin:0}
+.order{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.2vmin;min-height:0}
+.path{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
+.slot{width:clamp(96px,14vmin,130px);height:clamp(110px,16vmin,148px);border-radius:24px;border:5px dashed rgba(255,255,255,.95);background:rgba(255,255,255,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(40px,6vmin,56px);position:relative}
+.slot svg{width:66%;height:52%}
+.slot.filled{background:#fff;border-style:solid;border-color:var(--green);animation:bump .4s}
+.slot-n{position:absolute;top:-14px;left:-10px;width:36px;height:36px;border-radius:50%;background:var(--purple);color:#fff;font-size:20px;font-weight:900;display:grid;place-items:center}
+.slot .s-label{font-size:clamp(13px,1.8vmin,16px);font-weight:900;text-align:center;line-height:1.05}
+.arrow{font-size:30px;color:#fff;font-weight:900}
+.o-tray{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.o-card{width:clamp(120px,17vmin,160px);height:clamp(130px,18vmin,170px);border:none;border-radius:28px;background:#fff;box-shadow:0 8px 0 rgba(40,20,90,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:clamp(46px,7vmin,64px);line-height:1;padding:8px}
+.o-card svg{width:66%;height:56%}
+.o-card span{font-size:clamp(16px,2.2vmin,20px);font-weight:900}
+.o-card.used{visibility:hidden}
+.wash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;gap:10px}
+.hands-wrap{position:relative}
+.hands-wrap>svg{position:absolute;inset:0;width:100%;height:100%}
+.germ{position:absolute;width:clamp(66px,10vmin,96px);height:clamp(66px,10vmin,96px);transform:translate(-50%,-50%);border:none;background:none;padding:0;animation:wobble 1.6s ease-in-out infinite}
+.germ svg{width:100%;height:100%}
+.germ.gone{animation:poof .5s forwards;pointer-events:none}
+@keyframes wobble{50%{transform:translate(-50%,-50%) rotate(8deg) scale(1.06)}}
+@keyframes poof{to{transform:translate(-50%,-50%) scale(1.8);opacity:0}}
+.bub{position:absolute;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,rgba(180,230,255,.6) 50%,rgba(140,200,255,.25));border:2px solid rgba(255,255,255,.9);pointer-events:none;animation:bubUp 1.4s ease-out forwards}
+@keyframes bubUp{to{transform:translateY(-120px) scale(1.3);opacity:0}}
+.sys-grid{flex:1.15;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;min-height:0}
+.sys-card{border:none;border-radius:26px;background:var(--c);box-shadow:0 6px 0 rgba(40,20,90,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px;font-size:clamp(40px,6.5vmin,60px);line-height:1;position:relative}
+.sys-card svg{width:clamp(48px,8vmin,72px);height:clamp(48px,8vmin,72px)}
+.sys-card span{font-size:clamp(15px,2.2vmin,20px);font-weight:900;text-align:center}
+.sys-card.seen::after{content:"✔";position:absolute;top:8px;right:10px;background:var(--green);color:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:17px}
+.sys-card.active{box-shadow:0 0 0 5px var(--purple),0 6px 0 rgba(40,20,90,.15)}
+.facts{margin:6px 0 0;padding-left:22px;text-align:left;font-size:clamp(17px,2.3vmin,21px);font-weight:700;line-height:1.3}
+.facts li{margin:4px 0}
+.side .info-card.sys{align-items:stretch;text-align:left;flex-direction:column}
+@media (orientation:portrait){.sys-grid{flex:none;height:40%}}
+.modal{position:fixed;inset:0;background:rgba(40,20,80,.45);display:grid;place-items:center;z-index:50;padding:20px;animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0}}
+.card{background:#fff;border-radius:38px;padding:26px 30px;width:min(92vw,640px);max-height:92vh;overflow:auto;text-align:center;box-shadow:0 12px 0 rgba(40,20,90,.2);animation:popIn .35s}
+.card h2{margin:6px 0 10px;font-size:clamp(30px,5vmin,44px);color:var(--purple)}
+.big-stars{font-size:clamp(60px,11vmin,96px);display:flex;justify-content:center;gap:8px}
+.big-stars span{animation:popIn .5s backwards}
+.big-stars .on{color:#FFC21A;text-shadow:0 4px 0 #E09A00}.big-stars .off{color:#E9E3F5}
+.sticker{display:inline-grid;place-items:center;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#FFE38A);font-size:62px;box-shadow:0 0 0 6px #fff,0 0 0 10px var(--pink);animation:spinIn .8s}
+@keyframes spinIn{from{transform:rotate(-200deg) scale(0)}}
+.row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.book{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:16px;margin-top:10px}
+.book .slot2{display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:800;font-size:15px;border:none;background:none;padding:4px}
+.book .sticker{width:80px;height:80px;font-size:44px;animation:none}
+.book .locked .sticker{background:#EEE9F7;box-shadow:0 0 0 5px #fff,0 0 0 8px #DDD3EE;opacity:.6}
+.grown h3{margin:10px 0 6px;font-size:20px}
+.grown{padding:18px 24px}
+.grown .row{margin-top:12px}
+.seg{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.seg button{border:none;border-radius:20px;padding:12px 18px;min-height:60px;font-size:19px;font-weight:900;background:#F0ECFA;box-shadow:0 4px 0 #D9D0EE}
+.seg button.on{background:var(--purple);color:#fff;box-shadow:0 4px 0 #5243C2}
+.danger{background:#FFE1E1!important;color:#C0392B!important;box-shadow:0 4px 0 #F1B6B6!important}
+.danger.armed{background:#E74C3C!important;color:#fff!important}
+.note{font-size:15px;opacity:.7;margin-top:14px;line-height:1.35}
+.toast{position:fixed;left:50%;top:86px;transform:translateX(-50%);background:#3b2a5a;color:#fff;border-radius:999px;padding:12px 22px;font-weight:800;font-size:18px;z-index:60;animation:fadeIn .2s}
+#splash{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3vmin;background:linear-gradient(160deg,#8E7CFF 0%,#6FB6FF 48%,#7FE3D4 100%)}
+#splash .pipbig svg{width:clamp(160px,30vmin,280px);height:auto;animation:bob 3s ease-in-out infinite}
+.confetti{position:fixed;top:-60px;z-index:70;pointer-events:none;font-size:32px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(720deg)}}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="app">
+  <header id="top">
+    <button id="btnBack" class="icon-btn" aria-label="Back">🏠</button>
+    <div id="title"></div>
+    <div class="spacer"></div>
+    <div id="starCount" class="pill">⭐ 0</div>
+    <button id="btnMute" class="icon-btn" aria-label="Sound on or off">🔊</button>
+    <button id="btnGrown" class="icon-btn" aria-label="Grown-ups: press and hold"><span>⚙️</span></button>
+  </header>
+  <div id="guide">
+    <div id="pipWrap"></div>
+    <div id="bubble"><span id="bubbleText"></span><button id="btnHear" class="hear" aria-label="Hear it">🔊 Hear</button></div>
+  </div>
+  <main id="stage"></main>
+</div>
+<div id="splash">
+  <div class="pipbig"></div>
+  <h1 class="logo"><small>Lenny Bean's</small>Body Explorer</h1>
+  <button id="btnStart" class="big-btn pulse" style="min-height:96px;font-size:36px;padding:0 50px">▶ Let's Go!</button>
+</div>
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const stage=$('#stage');
+let timers=[];
+function later(fn,ms){const t=setTimeout(fn,ms);timers.push(t);return t;}
+function clearTimers(){timers.forEach(clearTimeout);timers=[];}
+function onTap(el,fn){el.addEventListener('click',fn);}
+function readMs(t){return 1300+String(t).length*62;}
+
+/* ---------- save data ---------- */
+const KEY='lennyBodyExplorer.v1';
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}}
+const DEFAULTS={level:'little',stars:{},stickers:[],muted:false,voice:true,slow:true};
+let S=Object.assign({},DEFAULTS,load());
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+/* ---------- sound ---------- */
+let AC=null;
+function ac(){try{if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(C)AC=new C();}if(AC&&AC.state==='suspended')AC.resume();}catch(e){}return AC;}
+function tone(f,t0,dur,type,vol){if(S.muted)return;const c=ac();if(!c)return;try{const o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.value=f;const t=c.currentTime+t0;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||.16,t+.02);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+dur+.05);}catch(e){}}
+const SFX={
+  tap:()=>tone(660,0,.12,'sine',.1),
+  pop:()=>{tone(520,0,.08,'sine',.14);tone(980,.05,.12,'sine',.1);},
+  good:()=>[523,659,784].forEach((f,i)=>tone(f,i*.09,.28,'triangle',.16)),
+  oops:()=>{tone(392,0,.18,'sine',.1);tone(330,.14,.26,'sine',.1);},
+  win:()=>[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,i*.13,.32,'triangle',.15))
+};
+
+/* ---------- speech ---------- */
+let VOICE=null;
+function pickVoice(){try{const vs=speechSynthesis.getVoices();const pref=['Samantha','Karen','Moira','Tessa','Ava','Allison','Google US English','Aria','Jenny'];
+  VOICE=vs.find(v=>pref.some(p=>v.name.indexOf(p)>=0)&&/^en/i.test(v.lang))||vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang))||null;}catch(e){}}
+if('speechSynthesis' in window){pickVoice();try{speechSynthesis.onvoiceschanged=pickVoice;}catch(e){}}
+function speak(text,force){
+  if(!('speechSynthesis' in window))return;
+  if(!force&&(S.muted||!S.voice))return;
+  try{speechSynthesis.cancel();
+    const clean=String(text).replace(/[^\p{L}\p{N}\s.,!?'’\-:;]/gu,' ').replace(/\s+/g,' ').trim();
+    if(!clean)return;
+    const u=new SpeechSynthesisUtterance(clean);
+    if(VOICE)u.voice=VOICE;u.lang=(VOICE&&VOICE.lang)||'en-US';
+    u.rate=S.slow?.85:.98;u.pitch=1.12;speechSynthesis.speak(u);}catch(e){}
+}
+let lastSay='';
+function say(text,spoken){
+  lastSay=spoken||text;
+  const b=$('#bubbleText');b.textContent=text;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
+  const p=$('#pipWrap');p.classList.remove('talk');void p.offsetWidth;p.classList.add('talk');
+  speak(lastSay);
+}
+onTap($('#btnHear'),()=>{ac();speak(lastSay,true);});
+
+/* ---------- art ---------- */
+const PIP=`<svg viewBox="0 0 100 112" aria-hidden="true">
+<ellipse cx="50" cy="106" rx="26" ry="5" fill="rgba(40,20,90,.18)"/>
+<path d="M27 72 Q50 61 73 72 L77 99 Q50 108 23 99Z" fill="#FF8C42"/>
+<path d="M27 72 Q50 61 73 72 L74 80 Q50 70 26 80Z" fill="#FFB27A"/>
+<circle cx="50" cy="86" r="7" fill="#FFD166" stroke="#fff" stroke-width="2"/>
+<path d="M47 86 l2 2 l4 -4" stroke="#FF8C42" stroke-width="2" fill="none" stroke-linecap="round"/>
+<line x1="50" y1="8" x2="50" y2="0" stroke="#9AA8C7" stroke-width="3"/>
+<circle cx="50" cy="3" r="5" fill="#FFD166" stroke="#fff" stroke-width="1.5"/>
+<circle cx="50" cy="46" r="38" fill="#CFEFFF" opacity=".55" stroke="#fff" stroke-width="3.5"/>
+<circle cx="50" cy="48" r="26" fill="#F5C29A"/>
+<path d="M25 44 Q27 20 50 20 Q73 20 75 44 Q66 31 54 33 Q46 38 36 34 Q29 36 25 44Z" fill="#6B3E26"/>
+<g class="pip-eyes"><ellipse cx="41" cy="49" rx="4.2" ry="5.2" fill="#2B2140"/><ellipse cx="59" cy="49" rx="4.2" ry="5.2" fill="#2B2140"/><circle cx="42.5" cy="47" r="1.5" fill="#fff"/><circle cx="60.5" cy="47" r="1.5" fill="#fff"/></g>
+<circle cx="35" cy="57" r="4.5" fill="#FF8FAB" opacity=".6"/><circle cx="65" cy="57" r="4.5" fill="#FF8FAB" opacity=".6"/>
+<path d="M43 60 Q50 67 57 60" stroke="#8A3B2A" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M22 32 Q30 15 44 11" stroke="#fff" stroke-width="3.5" fill="none" opacity=".85" stroke-linecap="round"/>
+</svg>`;
+function starPath(cx,cy,R,r){let d='';for(let i=0;i<10;i++){const a=Math.PI/5*i-Math.PI/2,rad=i%2?r:R;d+=(i?'L':'M')+(cx+rad*Math.cos(a)).toFixed(1)+' '+(cy+rad*Math.sin(a)).toFixed(1);}return d+'Z';}
+const GLOW=`<defs><filter id="glowF" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#FFF36B" flood-opacity="1"/><feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="#ffffff" flood-opacity="1"/></filter></defs>`;
+const SK='#F5C29A',SK2='#E3A47A',HAIR='#7A4A2A',SHIRT='#FF7BAC',SKIRT='#7C6CF2',SHOE='#FF9F1C';
+const KID_SVG=`<svg viewBox="0 0 300 500" preserveAspectRatio="xMidYMid meet">${GLOW}
+<ellipse cx="150" cy="484" rx="95" ry="10" fill="rgba(40,20,90,.13)"/>
+<g class="part" data-part="hair"><circle cx="78" cy="62" r="26" fill="${HAIR}"/><circle cx="222" cy="62" r="26" fill="${HAIR}"/><circle cx="96" cy="78" r="7" fill="#FFD166"/><circle cx="204" cy="78" r="7" fill="#FFD166"/></g>
+<g class="part" data-part="arms"><path d="M112 214 L68 294" stroke="${SK}" stroke-width="30" stroke-linecap="round" fill="none"/><path d="M188 214 L232 294" stroke="${SK}" stroke-width="30" stroke-linecap="round" fill="none"/></g>
+<g class="part" data-part="hands"><circle cx="60" cy="310" r="23" fill="${SK}" stroke="${SK2}" stroke-width="2"/><circle cx="78" cy="300" r="9" fill="${SK}" stroke="${SK2}" stroke-width="2"/><circle cx="240" cy="310" r="23" fill="${SK}" stroke="${SK2}" stroke-width="2"/><circle cx="222" cy="300" r="9" fill="${SK}" stroke="${SK2}" stroke-width="2"/></g>
+<g class="part" data-part="legs"><path d="M130 336 L127 446" stroke="${SK}" stroke-width="32" stroke-linecap="round" fill="none"/><path d="M170 336 L173 446" stroke="${SK}" stroke-width="32" stroke-linecap="round" fill="none"/></g>
+<g class="part" data-part="knees"><circle cx="128" cy="398" r="22" fill="transparent"/><circle cx="172" cy="398" r="22" fill="transparent"/><circle cx="128" cy="398" r="11" fill="${SK2}" opacity=".35"/><circle cx="172" cy="398" r="11" fill="${SK2}" opacity=".35"/><path d="M118 398 Q128 405 138 398" stroke="${SK2}" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M162 398 Q172 405 182 398" stroke="${SK2}" stroke-width="3" fill="none" stroke-linecap="round"/></g>
+<g class="part" data-part="feet"><ellipse cx="118" cy="462" rx="33" ry="17" fill="${SHOE}"/><ellipse cx="182" cy="462" rx="33" ry="17" fill="${SHOE}"/><ellipse cx="108" cy="456" rx="10" ry="4" fill="#fff" opacity=".5"/><ellipse cx="192" cy="456" rx="10" ry="4" fill="#fff" opacity=".5"/></g>
+<g class="part" data-part="neck"><rect x="134" y="164" width="32" height="40" rx="8" fill="${SK2}"/></g>
+<g class="part" data-part="tummy"><rect x="98" y="194" width="104" height="112" rx="30" fill="${SHIRT}"/><path d="${starPath(150,248,20,9)}" fill="#FFE066"/></g>
+<path d="M98 292 H202 L216 352 Q150 366 84 352 Z" fill="${SKIRT}" pointer-events="none"/>
+<g class="part" data-part="ears"><circle cx="84" cy="112" r="17" fill="${SK}"/><circle cx="216" cy="112" r="17" fill="${SK}"/><circle cx="83" cy="112" r="7" fill="${SK2}"/><circle cx="217" cy="112" r="7" fill="${SK2}"/></g>
+<g class="part" data-part="head"><circle cx="150" cy="108" r="66" fill="${SK}"/></g>
+<g class="part" data-part="hair"><path d="M84 104 Q80 40 150 40 Q220 40 216 104 Q205 74 180 68 Q166 88 132 84 Q104 82 84 104Z" fill="${HAIR}"/></g>
+<g pointer-events="none"><circle cx="108" cy="140" r="11" fill="#FF8FAB" opacity=".55"/><circle cx="192" cy="140" r="11" fill="#FF8FAB" opacity=".55"/></g>
+<g class="part" data-part="eyes"><circle cx="124" cy="112" r="19" fill="transparent"/><circle cx="176" cy="112" r="19" fill="transparent"/><ellipse cx="124" cy="112" rx="10" ry="13" fill="#2B2140"/><ellipse cx="176" cy="112" rx="10" ry="13" fill="#2B2140"/><circle cx="128" cy="107" r="4" fill="#fff"/><circle cx="180" cy="107" r="4" fill="#fff"/></g>
+<g class="part" data-part="nose"><circle cx="150" cy="133" r="14" fill="transparent"/><ellipse cx="150" cy="132" rx="8" ry="6" fill="${SK2}"/></g>
+<g class="part" data-part="mouth"><rect x="126" y="146" width="48" height="24" fill="transparent"/><path d="M130 150 Q150 172 170 150 Q150 158 130 150Z" fill="#D9465F"/></g>
+</svg>`;
+
+/* organ shapes (shared by diagram and icons) */
+const O={
+ brain:`<ellipse cx="150" cy="72" rx="46" ry="36" fill="#FFA6C9" stroke="#E57FA8" stroke-width="3"/><path d="M150 38 V106" stroke="#E57FA8" stroke-width="3"/><path d="M114 58 q8 -10 16 0 t16 0 M156 58 q8 -10 16 0 t16 0 M112 80 q9 -8 18 0 t18 0 M154 80 q9 -8 18 0 t18 0" stroke="#E57FA8" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+ lungs:`<path d="M150 158 V196 M150 196 L128 212 M150 196 L172 212" stroke="#C9A3E8" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M138 206 Q100 188 90 238 Q84 286 116 292 Q140 296 140 262Z" fill="#FFB3C1" stroke="#F28AA0" stroke-width="3"/><path d="M162 206 Q200 188 210 238 Q216 286 184 292 Q160 296 160 262Z" fill="#FFB3C1" stroke="#F28AA0" stroke-width="3"/>`,
+ heart:`<path d="M152 228 V206" stroke="#4A7FC1" stroke-width="8" stroke-linecap="round"/><path d="M160 226 Q160 204 178 206 Q188 208 186 222" stroke="#E63946" stroke-width="8" fill="none" stroke-linecap="round"/><path d="M140 240 Q138 222 156 222 Q170 222 176 232 Q190 236 188 254 Q184 278 160 290 Q140 276 140 240Z" fill="#E63946" stroke="#B5212F" stroke-width="3"/><path d="M152 236 Q160 252 172 246" stroke="#FF8A93" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+ liver:`<path d="M86 300 Q84 284 110 284 L168 288 Q178 292 166 302 Q140 322 102 322 Q86 318 86 300Z" fill="#B5523B" stroke="#8C3A27" stroke-width="3"/>`,
+ stomach:`<path d="M176 290 Q206 280 214 302 Q222 332 196 344 Q174 352 160 340 Q154 328 168 326 Q190 324 190 308 Q186 298 176 298Z" fill="#F4A261" stroke="#D9803B" stroke-width="3"/><path d="M176 290 Q170 284 172 278" stroke="#F4A261" stroke-width="7" fill="none" stroke-linecap="round"/>`,
+ large:`<path d="M100 432 V364 Q100 354 112 354 H188 Q200 354 200 364 V432" stroke="#E9A23B" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+ small:`<path d="M122 376 Q134 366 146 376 T170 376 Q184 380 176 392 Q166 400 154 392 T128 396 Q116 404 124 414 Q136 424 150 414 T178 414" stroke="#FFC870" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+};
+O.intestines=O.large+O.small;
+const VB={brain:'98 30 104 84',lungs:'80 152 140 148',heart:'130 196 66 100',liver:'80 276 104 52',stomach:'150 270 76 84',intestines:'86 342 128 104',large:'86 342 128 104',small:'110 360 80 66'};
+function icon(n){return `<svg viewBox="${VB[n]}" aria-hidden="true">${O[n]}</svg>`;}
+const ESO_ICON=`<svg viewBox="0 0 60 100" aria-hidden="true"><path d="M30 6 V80" stroke="#F7A8B8" stroke-width="16" stroke-linecap="round"/><path d="M30 6 V80" stroke="#FFD1DA" stroke-width="5" stroke-linecap="round"/><circle cx="30" cy="40" r="9" fill="#9BD66B" stroke="#6FAE43" stroke-width="2"/><path d="M22 92 L30 84 L38 92" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`;
+const ORGAN_SVG=`<svg viewBox="0 0 300 470" preserveAspectRatio="xMidYMid meet">${GLOW}
+<ellipse cx="150" cy="462" rx="100" ry="7" fill="rgba(40,20,90,.12)"/>
+<circle cx="150" cy="76" r="64" fill="#FFE3D1" stroke="#F2BFA0" stroke-width="4"/>
+<rect x="130" y="134" width="40" height="34" fill="#FFE3D1"/>
+<path d="M70 178 Q70 160 96 158 L204 158 Q230 160 230 178 L236 422 Q236 452 206 454 L94 454 Q64 452 64 422 Z" fill="#FFE3D1" stroke="#F2BFA0" stroke-width="4"/>
+<g class="part" data-part="brain">${O.brain}</g>
+<g class="part" data-part="lungs">${O.lungs}</g>
+<g class="part" data-part="heart">${O.heart}</g>
+<g class="part" data-part="liver">${O.liver}</g>
+<g class="part" data-part="stomach">${O.stomach}</g>
+<g class="part" data-part="intestines"><rect x="88" y="344" width="124" height="100" rx="20" fill="transparent"/>${O.large}${O.small}</g>
+</svg>`;
+const HAND_SHAPE=`<rect x="74" y="236" width="62" height="60" rx="16"/><rect x="40" y="128" width="124" height="132" rx="48"/><rect x="44" y="44" width="27" height="110" rx="13.5"/><rect x="74" y="28" width="27" height="122" rx="13.5"/><rect x="104" y="32" width="27" height="120" rx="13.5"/><rect x="134" y="54" width="25" height="100" rx="12.5"/><rect x="152" y="132" width="27" height="84" rx="13.5" transform="rotate(-38 165 174)"/>`;
+const HANDS_SVG=`<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet"><g fill="${SK}" stroke="${SK2}" stroke-width="3">${HAND_SHAPE}</g><g transform="translate(400 0) scale(-1 1)" fill="${SK}" stroke="${SK2}" stroke-width="3">${HAND_SHAPE}</g></svg>`;
+function germSVG(c1,c2){return `<svg viewBox="0 0 60 60"><path d="M30 6 C40 3 45 12 51 14 C59 19 54 28 56 34 C58 44 48 50 40 52 C32 58 24 54 18 52 C8 50 3 42 6 32 C4 22 10 15 16 12 C20 8 24 7 30 6Z" fill="${c1}" stroke="${c2}" stroke-width="3"/><circle cx="16" cy="20" r="3" fill="${c2}" opacity=".5"/><circle cx="46" cy="40" r="3.5" fill="${c2}" opacity=".5"/><circle cx="23" cy="28" r="5" fill="#fff"/><circle cx="37" cy="28" r="5" fill="#fff"/><circle cx="24" cy="29" r="2.6" fill="#2B2140"/><circle cx="38" cy="29" r="2.6" fill="#2B2140"/><path d="M23 38 Q30 44 37 38" stroke="#2B2140" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`;}
+/* ---------- content ---------- */
+const PRAISE=['Great job!','You got it!','Wonderful!','Yes! Super!','Way to go!','Brilliant!','Awesome!','Fantastic!'];
+const TRY=['Hmm, try again!','Almost! Try another one.','Good try! Pick again.','Oops! Have another go.'];
+const LITTLE_PARTS={
+ head:{name:'Head',icon:'🙂',fact:'Your head holds your brain, which helps you think.'},
+ hair:{name:'Hair',icon:'🎀',fact:'Hair helps keep your head warm.'},
+ eyes:{name:'Eyes',icon:'👀',fact:'We see with our eyes.',plural:1},
+ ears:{name:'Ears',icon:'👂',fact:'We hear with our ears.',plural:1},
+ nose:{name:'Nose',icon:'👃',fact:'We smell with our nose. We breathe with it too!'},
+ mouth:{name:'Mouth',icon:'👄',fact:'We eat, talk and smile with our mouth.'},
+ neck:{name:'Neck',icon:'🦒',fact:'Your neck holds up your head and helps it turn.',nofind:1},
+ arms:{name:'Arms',icon:'💪',fact:'Arms help you reach, lift and hug.',plural:1},
+ hands:{name:'Hands',icon:'✋',fact:'Hands help you hold, clap and wave.',plural:1},
+ tummy:{name:'Tummy',icon:'😋',fact:'When you eat, your food goes down to your tummy.'},
+ legs:{name:'Legs',icon:'🦵',fact:'Legs help you walk, run and jump.',plural:1},
+ knees:{name:'Knees',icon:'🧎',fact:'Knees bend so you can sit, crawl and jump.',plural:1,nofind:1},
+ feet:{name:'Feet',icon:'🦶',fact:'Feet help you stand, stomp and dance.',plural:1}
+};
+const ORGANS={
+ brain:{name:'Brain',fact:'Your brain is the boss of your body. It helps you think, learn, remember and move.'},
+ heart:{name:'Heart',fact:'Your heart is a strong muscle. It pumps blood all around your body, all day and all night.'},
+ lungs:{name:'Lungs',plural:1,fact:'You have two lungs. They fill up with air when you breathe in and give your body oxygen.'},
+ stomach:{name:'Stomach',fact:'Your stomach is a stretchy bag. It mixes and mashes the food you eat.'},
+ liver:{name:'Liver',fact:'Your liver is a big helper. It cleans your blood and helps your body use food.'},
+ intestines:{name:'Intestines',plural:1,fact:'Your intestines are long, curly tubes. They take the good stuff from food into your body.'}
+};
+Object.keys(ORGANS).forEach(k=>ORGANS[k].icon=icon(k));
+const USE_OPTS={eyes:['👀','Eyes'],ears:['👂','Ears'],nose:['👃','Nose'],tongue:['👅','Tongue'],hands:['👏','Hands'],feet:['🦶','Feet']};
+const USE_Q=[['What do we see with?','eyes','We see with our eyes.'],['What do we hear with?','ears','We hear with our ears.'],['What do we smell with?','nose','We smell with our nose.'],['What do we taste with?','tongue','We taste with our tongue.'],['What do we clap with?','hands','We clap with our hands. Clap clap!'],['What do we walk with?','feet','We walk with our feet.']];
+const COUNT_Q=[
+ {q:'How many eyes do you have?',pic:'👀',ans:2,opts:[1,2,3],fact:'Two eyes! One, two.'},
+ {q:'How many noses do you have?',pic:'👃',ans:1,opts:[1,2,3],fact:'One nose! Just one.'},
+ {q:'How many ears do you have?',pic:'👂',ans:2,opts:[1,2,4],fact:'Two ears! One on each side of your head.'},
+ {q:'How many fingers are on one hand?',pic:'🖐️',ans:5,opts:[3,4,5],fact:'Five fingers! One, two, three, four, five.'},
+ {q:'How many mouths do you have?',pic:'👄',ans:1,opts:[1,2,3],fact:'One mouth, for big smiles!'},
+ {q:'How many legs do you have?',pic:'🦵',ans:2,opts:[2,3,4],fact:'Two legs, for running and jumping!'}
+];
+const NUMW=['zero','one','two','three','four','five'];
+const SENSES=[{id:'see',label:'See',html:'👀',c:'#4DB6FF'},{id:'hear',label:'Hear',html:'👂',c:'#9B8CFF'},{id:'smell',label:'Smell',html:'👃',c:'#FF8FAB'},{id:'taste',label:'Taste',html:'👅',c:'#FF9F1C'},{id:'touch',label:'Touch',html:'✋',c:'#3DD6C6'}];
+const SENSE_ITEMS=[
+ {html:'🌈',label:'Rainbow',t:'see',fb:'We see a rainbow with our eyes!'},
+ {html:'⭐',label:'Twinkly star',t:'see',fb:'We see twinkly stars with our eyes!'},
+ {html:'🥁',label:'Drum',t:'hear',fb:'Boom boom! We hear drums with our ears.'},
+ {html:'🔔',label:'Bell',t:'hear',fb:'Ding ding! We hear bells with our ears.'},
+ {html:'🌸',label:'Flower',t:'smell',fb:'Sniff sniff! We smell flowers with our nose.'},
+ {html:'🌹',label:'Rose',t:'smell',fb:'Sniff! We smell roses with our nose.'},
+ {html:'🍦',label:'Ice cream',t:'taste',fb:'Yum! We taste ice cream with our tongue.'},
+ {html:'🍋',label:'Sour lemon',t:'taste',fb:'Sour! We taste lemons with our tongue.'},
+ {html:'🧸',label:'Soft teddy',t:'touch',fb:'So soft! We feel with our skin and fingers.'},
+ {html:'🧊',label:'Cold ice',t:'touch',fb:'Brrr! Our skin can feel cold ice.'}
+];
+const HABITS=[
+ {html:'🥦',label:'Eating veggies',t:'yes',fb:'Yes! Veggies help you grow strong.'},
+ {html:'💧',label:'Drinking water',t:'yes',fb:'Yes! Water is great for your body.'},
+ {html:'😴',label:'Sleeping well',t:'yes',fb:'Yes! Sleep helps your body and brain grow.'},
+ {html:'🪥',label:'Brushing teeth',t:'yes',fb:'Yes! Brushing keeps your teeth healthy.'},
+ {html:'🧼',label:'Washing hands',t:'yes',fb:'Yes! Washing hands washes germs away.'},
+ {html:'⚽',label:'Playing outside',t:'yes',fb:'Yes! Moving and playing make you strong.'},
+ {html:'🍎',label:'Eating fruit',t:'yes',fb:'Yes! Fruit is a yummy, healthy snack.'},
+ {html:'🍭',label:'Candy all day',t:'no',fb:'Right! Too much candy is not good for your teeth.'},
+ {html:'📺',label:'TV all day long',t:'no',fb:'Right! Our bodies need to move and play.'},
+ {html:'🌙',label:'Staying up very late',t:'no',fb:'Right! Growing bodies need lots of sleep.'},
+ {html:'🥤',label:'Lots of soda',t:'no',fb:'Right! Water is a better drink for your body.'},
+ {html:'🛋️',label:'Sitting still all day',t:'no',fb:'Right! Our muscles like to move.'}
+];
+const ORGAN_Q=[
+ {q:'Which one pumps blood all around your body?',ans:'heart',opts:['heart','lungs','stomach'],fact:'Your heart pumps blood all day and all night.'},
+ {q:'Which ones help you breathe?',ans:'lungs',opts:['lungs','brain','liver'],fact:'Your lungs fill with air when you breathe in.'},
+ {q:'Which one is the boss that helps you think?',ans:'brain',opts:['brain','heart','intestines'],fact:'Your brain helps you think, learn and remember.'},
+ {q:'Which one mixes and mashes your food?',ans:'stomach',opts:['stomach','lungs','brain'],fact:'Your stomach squishes and mixes your food.'},
+ {q:'Which ones are long, curly tubes for food?',ans:'intestines',opts:['intestines','heart','lungs'],fact:'Your intestines take the good stuff out of your food.'}
+];
+const SYSTEMS=[
+ {id:'skeletal',name:'Skeleton',full:'Skeletal system',icon:'🦴',c:'#FFF1D6',facts:['Your skeleton holds you up and gives your body its shape.','Grown-ups have 206 bones. Babies have even more, around 300, and some join together as they grow.','Your skull protects your brain, and your ribs protect your heart and lungs.','The smallest bone in your body is deep inside your ear.']},
+ {id:'muscular',name:'Muscles',full:'Muscular system',icon:'💪',c:'#FFE0E6',facts:['You have more than 600 muscles!','Muscles move your bones by pulling on them. Muscles can pull, but they cannot push.','Many muscles work in pairs. When one pulls, its partner relaxes.','Your heart is a special muscle that keeps working your whole life.']},
+ {id:'circulatory',name:'Heart & Blood',full:'Circulatory system',icon:icon('heart'),c:'#FFE3E3',facts:['Your heart is a pump about the size of your fist.','It pushes blood through tubes called blood vessels. Arteries carry blood away from the heart, and veins bring it back.','Blood carries oxygen and nutrients to every part of you.','Your heart has four rooms called chambers.']},
+ {id:'respiratory',name:'Lungs & Breathing',full:'Respiratory system',icon:icon('lungs'),c:'#E3F2FF',facts:['When you breathe in, air travels down your windpipe into your lungs.','Your lungs pass oxygen into your blood.','When you breathe out, you get rid of a gas called carbon dioxide.','A dome-shaped muscle under your lungs, called the diaphragm, helps you breathe.']},
+ {id:'digestive',name:'Digestion',full:'Digestive system',icon:icon('stomach'),c:'#FFF4D6',facts:['Your digestive system breaks food into tiny pieces your body can use to grow and get energy.','It starts in your mouth when you chew.','Your stomach mixes food with special juices.','The small intestine is the longest part. It soaks nutrients into your blood.']},
+ {id:'nervous',name:'Brain & Nerves',full:'Nervous system',icon:icon('brain'),c:'#F1E6FF',facts:['Your brain is your body’s control center.','Nerves carry messages between your brain and your body super fast.','Your spinal cord runs down your back, safe inside your backbone.','Your brain helps you think, feel, remember and move.']}
+];
+const FOOD_STEPS=[
+ {id:'mouth',label:'Mouth',html:'👄',fact:'Mouth: your teeth chew food into small pieces, and saliva makes it soft and starts breaking it down.'},
+ {id:'eso',label:'Esophagus',html:ESO_ICON,fact:'Esophagus: when you swallow, this food tube squeezes the food down to your stomach.'},
+ {id:'stomach',label:'Stomach',html:icon('stomach'),fact:'Stomach: strong muscles and stomach juices mix and mash food into a thick, soupy mix.'},
+ {id:'small',label:'Small intestine',html:icon('small'),fact:'Small intestine: this long, twisty tube soaks up nutrients from food into your blood.'},
+ {id:'large',label:'Large intestine',html:icon('large'),fact:'Large intestine: it soaks up water. What is left over leaves your body when you go to the bathroom.'}
+];
+const SUPER_Q=[
+ {q:'How many bones does a grown-up have?',o:[['206','🦴',1],['50','🦴'],['1,000','🦴']],fact:'Grown-ups have 206 bones. Babies have about 300, and some join together as they grow.'},
+ {q:'What does your heart pump around your body?',o:[['Blood','❤️',1],['Air','💨'],['Food','🍎']],fact:'Your heart pumps blood through your blood vessels.'},
+ {q:'Which gas do your lungs take in that your body needs?',o:[['Oxygen','🌬️',1],['Carbon dioxide','💨'],['Helium','🎈']],fact:'Your lungs pass oxygen into your blood, and you breathe out carbon dioxide.'},
+ {q:'Where does digestion begin?',o:[['In your mouth','👄',1],['In your stomach','🥣'],['In your feet','🦶']],fact:'Digestion begins when you chew, and saliva starts to break food down.'},
+ {q:'What protects your brain?',o:[['Your skull','⛑️',1],['Your ribs','🦴'],['Your kneecap','🦵']],fact:'Your skull is a strong bony helmet for your brain.'},
+ {q:'What protects your heart and lungs?',o:[['Your ribs','🦴',1],['Your skull','🧠'],['Your toes','🦶']],fact:'Your rib cage wraps around your heart and lungs like a shield.'},
+ {q:'What carries messages between your brain and body?',o:[['Nerves','⚡',1],['Bones','🦴'],['Hair','💇']],fact:'Nerves send messages super fast.'},
+ {q:'How many chambers (rooms) does your heart have?',o:[['4','❤️',1],['2','❤️'],['10','❤️']],fact:'Your heart has four chambers: two atria on top and two ventricles below.'},
+ {q:'Which is the longest part of your digestive system?',o:[['Small intestine','🌀',1],['Stomach','🥣'],['Esophagus','📏']],fact:'The small intestine is the longest part, even though it is called small.'},
+ {q:'Where is the smallest bone in your body?',o:[['In your ear','👂',1],['In your toe','🦶'],['In your nose','👃']],fact:'The smallest bone, called the stirrup, is deep inside your ear.'},
+ {q:'Which muscle helps you breathe?',o:[['Diaphragm','🌬️',1],['Biceps','💪'],['Calf muscle','🦵']],fact:'The diaphragm is a dome-shaped muscle under your lungs.'},
+ {q:'What is the biggest organ of your body?',o:[['Your skin','🖐️',1],['Your heart','❤️'],['Your brain','🧠']],fact:'Your skin is your biggest organ. It protects everything inside.'},
+ {q:'How do muscles move your bones?',o:[['By pulling','💪',1],['By pushing','👐'],['By spinning','🌀']],fact:'Muscles can only pull. Many work in pairs to move bones back and forth.'},
+ {q:'Which blood vessels carry blood away from your heart?',o:[['Arteries','➡️',1],['Veins','⬅️'],['Nerves','⚡']],fact:'Arteries carry blood away from the heart, and veins bring it back.'},
+ {q:'What do your kidneys do?',o:[['Filter your blood','🧽',1],['Help you see','👀'],['Grow your hair','💇']],fact:'Your two kidneys filter waste out of your blood and make urine.'},
+ {q:'What does your spinal cord do?',o:[['Carries messages','⚡',1],['Pumps blood','❤️'],['Digests food','🥣']],fact:'Your spinal cord carries messages between your brain and body, safe inside your backbone.'}
+];
+
+/* ---------- levels & activities ---------- */
+const LEVELS=[
+ {id:'little',name:'Little Explorer',ages:'3–4',emoji:'🐣',c:'#FF8FAB',acts:['l_tap','l_find','l_use','l_count','l_wash']},
+ {id:'big',name:'Big Explorer',ages:'5–6',emoji:'🚀',c:'#4DB6FF',acts:['b_senses','b_inside','b_findorgan','b_organquiz','b_habits']},
+ {id:'super',name:'Super Explorer',ages:'7–9',emoji:'🔬',c:'#9B8CFF',acts:['s_systems','s_food','s_match','s_quiz']}
+];
+const ACTS={
+ l_tap:{name:'Tap & Learn',emoji:'👆',c:'#FFC4D6',sticker:'🌟',run:actTapLearn},
+ l_find:{name:'Find It!',emoji:'🔍',c:'#FFE38A',sticker:'🔍',run:actFindPart},
+ l_use:{name:'What Do We Use?',emoji:'👀',c:'#BDE7FF',sticker:'👀',run:actUse},
+ l_count:{name:'Count With Me',emoji:'🖐️',c:'#C9F2D9',sticker:'🖐️',run:actCount},
+ l_wash:{name:'Bubble Wash',emoji:'🧼',c:'#D9CCFF',sticker:'🧼',run:actWash},
+ b_senses:{name:'Five Senses',emoji:'👃',c:'#FFD6A5',sticker:'🌈',run:actSenses},
+ b_inside:{name:'Inside My Body',emoji:icon('heart'),c:'#FFC4D6',sticker:'❤️',run:actInside},
+ b_findorgan:{name:'Find the Organ',emoji:icon('brain'),c:'#E3D4FF',sticker:'🧠',run:actFindOrgan},
+ b_organquiz:{name:'Organ Quiz',emoji:icon('lungs'),c:'#BDE7FF',sticker:'🏅',run:actOrganQuiz},
+ b_habits:{name:'Healthy Habits',emoji:'🥦',c:'#C9F2D9',sticker:'🥦',run:actHabits},
+ s_systems:{name:'Body Systems',emoji:'🦴',c:'#FFF1D6',sticker:'🦴',run:actSystems},
+ s_food:{name:"Food's Journey",emoji:'🍎',c:'#FFD6A5',sticker:'🍎',run:actFood},
+ s_match:{name:'System Match',emoji:'🧩',c:'#C9F2D9',sticker:'🧩',run:actMatch},
+ s_quiz:{name:'Body Quiz',emoji:'🏆',c:'#E3D4FF',sticker:'🏆',run:actQuiz}
+};
+const lvl=id=>LEVELS.find(l=>l.id===(id||S.level))||LEVELS[0];
+const levelOf=actId=>LEVELS.find(l=>l.acts.indexOf(actId)>=0).id;
+const levelStars=id=>lvl(id).acts.reduce((s,a)=>s+(S.stars[a]||0),0);
+const totalStars=()=>Object.keys(S.stars).reduce((s,k)=>s+(S.stars[k]||0),0);
+function starStr(n){let s='';for(let i=0;i<3;i++)s+=`<span class="${i<n?'on':'off'}">★</span>`;return `<div class="stars">${s}</div>`;}
+function updateTop(){$('#starCount').textContent='⭐ '+totalStars();$('#btnMute').textContent=S.muted?'🔇':'🔊';}
+/* ---------- navigation ---------- */
+let backFn=null,cur=null;
+function setTop(title,back,ic){$('#title').textContent=title;backFn=back;const b=$('#btnBack');b.classList.toggle('hidden',!back);b.textContent=ic||'⬅️';updateTop();}
+onTap($('#btnBack'),()=>{SFX.tap();if(backFn)backFn();});
+onTap($('#btnMute'),()=>{S.muted=!S.muted;save();updateTop();if(S.muted){try{speechSynthesis.cancel();}catch(e){}}else SFX.good();});
+function reset(){clearTimers();cur=null;closeModal();$$('.confetti').forEach(c=>c.remove());stage.innerHTML='';delete stage.dataset.target;}
+
+function showHome(){
+  reset();setTop("Lenny Bean's Body Explorer",null);
+  say("Hi Lenny Bean! I'm Pip, a tiny explorer. Let's explore the amazing human body! Pick an adventure.");
+  stage.innerHTML=`<div class="home"><h1 class="logo"><small>Lenny Bean's</small>Body Explorer</h1>
+  <div class="levels">${LEVELS.map(l=>`<button class="level-card" data-level="${l.id}" style="--c:${l.c}">${l.id===S.level?'<span class="lv-now">⭐ My level</span>':''}<div class="lv-emoji">${l.emoji}</div><div class="lv-text"><div class="lv-name">${l.name}</div><div class="lv-age">Ages ${l.ages}</div><div class="lv-stars">⭐ ${levelStars(l.id)} / ${l.acts.length*3}</div></div></button>`).join('')}</div>
+  <button class="big-btn pinkb" id="btnBook">📒 My Stickers (${S.stickers.length})</button></div>`;
+  $$('.level-card').forEach(b=>onTap(b,()=>{SFX.tap();S.level=b.dataset.level;save();showMap();}));
+  onTap($('#btnBook'),()=>{SFX.tap();showBook();});
+}
+function showMap(){
+  reset();const L=lvl();setTop(L.name,showHome,'🏠');
+  say(L.name+'! Pick an adventure.');
+  stage.innerHTML=`<div class="map"><h2>${L.emoji} ${L.name}</h2><div class="acts">${L.acts.map((id,i)=>{const a=ACTS[id];return `<button class="act-card" data-act="${id}" style="--i:${i};--c:${a.c}"><div class="act-emoji">${a.emoji}</div><div class="act-name">${a.name}</div>${starStr(S.stars[id]||0)}</button>`;}).join('')}</div></div>`;
+  $$('.act-card').forEach(b=>onTap(b,()=>{SFX.tap();startAct(b.dataset.act);}));
+}
+function startAct(id){reset();const a=ACTS[id];cur={id,mistakes:0};setTop(a.name,showMap,'⬅️');stage.dataset.act=id;a.run();}
+function mistake(){if(cur)cur.mistakes++;}
+function finishAct(){
+  if(!cur||cur.done)return;cur.done=1;const id=cur.id,a=ACTS[id];
+  const stars=levelOf(id)==='little'?3:(cur.mistakes<=1?3:cur.mistakes<=3?2:1);
+  S.stars[id]=Math.max(S.stars[id]||0,stars);
+  const fresh=S.stickers.indexOf(id)<0;if(fresh)S.stickers.push(id);
+  save();updateTop();SFX.win();confetti();
+  const msg=pick(['Amazing job, Lenny Bean!','You did it, Lenny Bean!','Super exploring!','Wow, what a great explorer!']);
+  say(msg+(fresh?' You earned a new sticker!':''));
+  const m=openModal(`<div class="card"><div class="big-stars">${[0,1,2].map(i=>`<span class="${i<stars?'on':'off'}" style="animation-delay:${.15+i*.2}s">★</span>`).join('')}</div><h2>${msg}</h2>
+   <div style="font-size:22px;font-weight:800;margin-bottom:16px">${fresh?'New sticker!':'Your sticker:'}</div><div class="sticker">${a.sticker}</div>
+   <div class="row"><button class="big-btn alt" id="mAgain">🔁 Again</button><button class="big-btn" id="mMore">🗺️ More</button></div></div>`);
+  onTap($('#mAgain',m),()=>{SFX.tap();startAct(id);});
+  onTap($('#mMore',m),()=>{SFX.tap();showMap();});
+}
+function showBook(){
+  reset();setTop('My Stickers',showHome,'🏠');
+  const n=S.stickers.length,all=Object.keys(ACTS).length;
+  say(n?`You have ${n} sticker${n>1?'s':''}! Tap one to hear about it.`:'Play adventures to earn stickers!');
+  stage.innerHTML=`<div class="map"><h2>📒 ${n} / ${all} stickers</h2><div class="card" style="width:min(96%,900px);max-height:none;flex:0 1 auto;overflow:auto"><div class="book">${Object.keys(ACTS).map(id=>{const a=ACTS[id],has=S.stickers.indexOf(id)>=0;return `<button class="slot2 ${has?'':'locked'}" data-act="${id}"><span class="sticker">${has?a.sticker:'❔'}</span>${a.name}</button>`;}).join('')}</div></div></div>`;
+  $$('.slot2').forEach(b=>onTap(b,()=>{const id=b.dataset.act,a=ACTS[id];const has=S.stickers.indexOf(id)>=0;SFX.pop();say(has?`${a.name} sticker!`:`Play ${a.name} in ${lvl(levelOf(id)).name} to win this sticker.`);}));
+}
+function openModal(html){closeModal();const m=document.createElement('div');m.className='modal';m.id='modal';m.innerHTML=html;document.body.appendChild(m);return m;}
+function closeModal(){const m=$('#modal');if(m)m.remove();}
+function confetti(){const e=['⭐','🎉','💖','✨','🌟','🎈'];for(let i=0;i<34;i++){const d=document.createElement('div');d.className='confetti';d.textContent=pick(e);d.style.left=Math.random()*100+'vw';d.style.animationDuration=(1.8+Math.random()*1.6)+'s';d.style.animationDelay=Math.random()*.5+'s';d.style.fontSize=(22+Math.random()*24)+'px';document.body.appendChild(d);setTimeout(()=>d.remove(),4200);}}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200);}
+function progress(el,total,done,curI){el.innerHTML=Array.from({length:total},(_,i)=>`<span class="dot ${i<done?'on':(i===curI?'cur':'')}"></span>`).join('');}
+function partEls(id){return $$(`.figure [data-part="${id}"]`);}
+function glow(id){$$('.figure .part.glow').forEach(p=>p.classList.remove('glow'));partEls(id).forEach(p=>{void p.getBoundingClientRect();p.classList.add('glow');});}
+function wiggle(id){partEls(id).forEach(p=>{p.classList.remove('wig');void p.getBoundingClientRect();p.classList.add('wig');});}
+function shakeEl(el){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');}
+
+/* ---------- engine: tap to explore ---------- */
+function exploreBody(svg,parts,intro,doneMsg){
+  say(intro);
+  stage.innerHTML=`<div class="split"><div class="figure">${svg}</div><div class="side"><div class="info-card" id="info"><div class="info-emoji">👆</div><div class="info-body"><div class="info-name">Tap a part!</div><div class="info-text"></div></div></div><div class="progress" id="prog"></div><div style="text-align:center"><button class="big-btn pulse hidden" id="doneBtn">✅ All done!</button></div></div></div>`;
+  const ids=Object.keys(parts),seen=new Set(),prog=$('#prog');
+  const draw=()=>progress(prog,ids.length,seen.size);draw();
+  $$('.figure .part').forEach(el=>onTap(el,()=>{
+    const id=el.dataset.part,p=parts[id];if(!p)return;
+    SFX.pop();glow(id);seen.add(id);draw();
+    const info=$('#info');info.innerHTML=`<div class="info-emoji">${p.icon}</div><div class="info-body"><div class="info-name">${p.name}</div><div class="info-text">${p.fact}</div></div>`;
+    info.classList.remove('pop');void info.offsetWidth;info.classList.add('pop');
+    say(`${p.name}! ${p.fact}`);
+    if(seen.size>=Math.ceil(ids.length*.6))$('#doneBtn').classList.remove('hidden');
+    if(seen.size===ids.length&&!cur.allSeen){cur.allSeen=1;later(()=>say(doneMsg),readMs(p.fact)+400);}
+  }));
+  onTap($('#doneBtn'),()=>{SFX.tap();finishAct();});
+}
+/* ---------- engine: find the part ---------- */
+function findGame(svg,parts,rounds){
+  stage.innerHTML=`<div class="split"><div class="figure">${svg}</div><div class="side"><div class="info-card"><div class="info-emoji" id="fIcon">🔍</div><div class="info-body"><div class="info-name" id="fName"></div><div class="info-text">Tap it on the picture!</div></div></div><div class="progress" id="prog"></div></div></div>`;
+  const order=shuffle(Object.keys(parts).filter(k=>!parts[k].nofind)).slice(0,rounds);let r=0,locked=false;
+  const ask=()=>{const id=order[r],p=parts[id];stage.dataset.target=id;$('#fIcon').innerHTML=p.icon;$('#fName').textContent='Find the '+p.name.toLowerCase()+'!';progress($('#prog'),order.length,r,r);say(`Can you find the ${p.name.toLowerCase()}?`);};
+  $$('.figure .part').forEach(el=>onTap(el,()=>{
+    if(locked||r>=order.length)return;const id=el.dataset.part,target=order[r],p=parts[id];if(!p)return;
+    if(id===target){locked=true;SFX.good();glow(id);say(`${pick(PRAISE)} ${p.plural?'Those are':'That is'} the ${p.name.toLowerCase()}!`);
+      later(()=>{locked=false;r++;if(r>=order.length){progress($('#prog'),order.length,r);finishAct();}else ask();},2300);}
+    else{mistake();SFX.oops();wiggle(id);say(`${p.plural?'Those are':'That is'} the ${p.name.toLowerCase()}. Can you find the ${parts[target].name.toLowerCase()}?`);}
+  }));
+  ask();
+}
+/* ---------- engine: quiz ---------- */
+function quiz(questions,opt){
+  opt=opt||{};let i=0,locked=false;
+  stage.innerHTML=`<div class="quiz"><div class="q-text" id="qText"></div><div class="q-pic hidden" id="qPic"></div><div class="opts ${opt.text?'text':''}" id="opts"></div><div class="q-fact hidden" id="qFact"></div><button class="big-btn hidden" id="qNext">Next ➜</button><div class="progress" id="prog"></div></div>`;
+  const next=()=>{i++;if(i>=questions.length){progress($('#prog'),questions.length,i);finishAct();}else show();};
+  function show(){
+    const Q=questions[i];locked=false;$('#qText').textContent=Q.q;
+    const pic=$('#qPic');pic.classList.toggle('hidden',!Q.pic);pic.innerHTML=Q.pic||'';
+    $('#qFact').classList.add('hidden');$('#qNext').classList.add('hidden');progress($('#prog'),questions.length,i,i);
+    say(Q.q);
+    const shown=shuffle(Q.opts);const box=$('#opts');box.innerHTML=shown.map(o=>`<button class="opt" data-label="${o.label}">${o.html}<span class="opt-label">${o.label}</span></button>`).join('');
+    $$('.opt',box).forEach((b,bi)=>onTap(b,()=>{
+      if(locked||b.classList.contains('wrong'))return;
+      if(shown[bi].ok){locked=true;b.classList.add('right');SFX.good();const msg=pick(PRAISE)+' '+(Q.fact||'');say(msg);
+        if(Q.fact){const f=$('#qFact');f.textContent='💡 '+Q.fact;f.classList.remove('hidden');}
+        if(opt.autoNext)later(next,readMs(msg));else $('#qNext').classList.remove('hidden');}
+      else{mistake();b.classList.add('wrong');SFX.oops();say(pick(TRY)+(opt.sayWrong?` That is the ${b.dataset.label.toLowerCase()}.`:''));}
+    }));
+  }
+  onTap($('#qNext'),()=>{SFX.tap();next();});
+  show();
+}
+/* ---------- engine: drag & drop (or tap-then-tap) match ---------- */
+function dragMatch(targets,items,cls,doneMsg){
+  stage.innerHTML=`<div class="dm ${cls||''}"><div class="dm-targets">${targets.map(t=>`<div class="dm-target" data-t="${t.id}" style="--c:${t.c}"><div class="dm-t-head">${t.html}</div><div class="dm-t-label">${t.label}</div>${t.sub?`<div class="dm-t-sub">${t.sub}</div>`:''}<div class="dm-drop"></div></div>`).join('')}</div>
+  <div class="dm-tray">${shuffle(items).map(it=>`<div class="dm-item" data-k="${items.indexOf(it)}" data-t="${it.t}">${it.html}<div class="dm-i-label">${it.label}</div></div>`).join('')}</div></div>`;
+  let left=items.length,sel=null;
+  const clearHover=()=>$$('.dm-target.hover').forEach(t=>t.classList.remove('hover'));
+  const targetAt=(x,y)=>{const n=document.elementFromPoint(x,y);return n&&n.closest?n.closest('.dm-target'):null;};
+  function tryDrop(el,t){
+    const it=items[+el.dataset.k];
+    if(el.dataset.t===t.dataset.t){
+      el.classList.remove('selected');sel=null;$('.dm-drop',t).appendChild(el);el.style.pointerEvents='none';
+      SFX.good();left--;
+      if(left===0){const m=it.fb+' '+doneMsg;say(m);later(finishAct,readMs(m));}else say(it.fb);
+    }else{mistake();SFX.oops();shakeEl(el);shakeEl(t);el.classList.remove('selected');sel=null;say(pick(TRY));}
+  }
+  $$('.dm-item').forEach(el=>el.addEventListener('pointerdown',e=>{
+    if(el.parentNode.classList.contains('dm-drop'))return;
+    e.preventDefault();ac();const it=items[+el.dataset.k];
+    const r=el.getBoundingClientRect(),ox=e.clientX-r.left,oy=e.clientY-r.top,sx=e.clientX,sy=e.clientY;let moved=false,ghost=null;
+    const move=ev=>{
+      if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)>10){moved=true;ghost=el.cloneNode(true);ghost.classList.add('ghost');ghost.classList.remove('selected');ghost.style.width=r.width+'px';ghost.style.height=r.height+'px';document.body.appendChild(ghost);el.classList.add('dragging');SFX.tap();speak(it.label);}
+      if(moved){ghost.style.left=(ev.clientX-ox)+'px';ghost.style.top=(ev.clientY-oy)+'px';clearHover();const t=targetAt(ev.clientX,ev.clientY);if(t)t.classList.add('hover');}
+    };
+    const up=ev=>{
+      window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);
+      clearHover();el.classList.remove('dragging');if(ghost)ghost.remove();
+      if(!moved){
+        if(sel===el){el.classList.remove('selected');sel=null;return;}
+        if(sel)sel.classList.remove('selected');sel=el;el.classList.add('selected');SFX.tap();say(it.label+'! Now tap where it goes.');return;}
+      const t=ev.type==='pointerup'?targetAt(ev.clientX,ev.clientY):null;if(t)tryDrop(el,t);
+    };
+    window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
+  }));
+  $$('.dm-target').forEach(t=>onTap(t,()=>{if(sel)tryDrop(sel,t);}));
+}
+
+/* ---------- Little Explorer ---------- */
+function actTapLearn(){exploreBody(KID_SVG,LITTLE_PARTS,'Tap a body part to hear its name!','You found every part! Tap All done when you are ready.');}
+function actFindPart(){findGame(KID_SVG,LITTLE_PARTS,5);}
+function actUse(){
+  const qs=shuffle(USE_Q).slice(0,5).map(([q,ans,fact])=>{const others=shuffle(Object.keys(USE_OPTS).filter(k=>k!==ans)).slice(0,2);
+    return {q,fact,opts:[ans].concat(others).map(k=>({html:USE_OPTS[k][0],label:USE_OPTS[k][1],ok:k===ans}))};});
+  quiz(qs,{autoNext:true,sayWrong:true});
+}
+function actCount(){
+  const qs=shuffle(COUNT_Q).slice(0,5).map(c=>({q:c.q,pic:c.pic,fact:c.fact,opts:c.opts.map(n=>({html:`<div class="num">${n}</div><div class="dots">${'●'.repeat(n)}</div>`,label:NUMW[n],ok:n===c.ans}))}));
+  quiz(qs,{autoNext:true});
+}
+function actWash(){
+  say('Oh no, silly germs! Tap them to wash them away with soap bubbles.');
+  const spots=shuffle([[100,180],[76,228],[132,226],[58,74],[116,62],[300,180],[324,228],[268,226],[342,74],[284,62]]).slice(0,8);
+  const cols=[['#9BE58B','#5DB04C'],['#C7A6FF','#8E68E0'],['#FFC27A','#E39235'],['#8FD8FF','#3FA6DD']];
+  stage.innerHTML=`<div class="wash"><div class="hands-wrap" id="hw">${HANDS_SVG}${spots.map(([x,y],i)=>{const c=cols[i%4];return `<button class="germ" style="left:${x/4}%;top:${y/3}%;animation-delay:${i*.15}s" aria-label="germ">${germSVG(c[0],c[1])}</button>`;}).join('')}</div><div class="progress" id="prog"></div></div>`;
+  let left=spots.length;const prog=$('#prog');progress(prog,spots.length,0);
+  const hw=$('#hw');
+  const fit=()=>{if(!hw.isConnected){window.removeEventListener('resize',fit);return;}const r=stage.getBoundingClientRect();const w=Math.max(200,Math.min(r.width-40,(r.height-80)*4/3));hw.style.width=w+'px';hw.style.height=(w*.75)+'px';};
+  fit();window.addEventListener('resize',fit);
+  $$('.germ').forEach(g=>onTap(g,()=>{
+    if(g.classList.contains('gone'))return;g.classList.add('gone');SFX.pop();
+    for(let k=0;k<4;k++){const b=document.createElement('div');b.className='bub';const s=14+Math.random()*26;b.style.width=b.style.height=s+'px';b.style.left=`calc(${g.style.left} + ${(Math.random()*60-30).toFixed(0)}px)`;b.style.top=`calc(${g.style.top} + ${(Math.random()*30-15).toFixed(0)}px)`;b.style.animationDelay=k*.08+'s';hw.appendChild(b);setTimeout(()=>b.remove(),1700);}
+    left--;progress(prog,spots.length,spots.length-left);
+    if(left>0){say(pick(['Pop!','Bye bye, germ!','Scrub scrub!','Bubbles!','Splish splash!']));}
+    else{const m='Sparkly clean hands! Soap and water wash germs away. Scrub for 20 seconds, as long as singing Happy Birthday two times!';say(m);later(finishAct,readMs(m)-1500);}
+  }));
+}
+/* ---------- Big Explorer ---------- */
+function actSenses(){
+  say('Drag each thing to the sense you use for it. Or tap it, then tap the sense.');
+  const items=SENSES.map(s=>pick(SENSE_ITEMS.filter(i=>i.t===s.id)));
+  dragMatch(SENSES.map(s=>({id:s.id,html:s.html,label:s.label,c:s.c})),items,'','You know all five senses!');
+}
+function actInside(){exploreBody(ORGAN_SVG,ORGANS,'Peek inside! Tap each organ to learn what it does.','You explored every organ! Tap All done when you are ready.');}
+function actFindOrgan(){findGame(ORGAN_SVG,ORGANS,5);}
+function actOrganQuiz(){
+  const qs=shuffle(ORGAN_Q).map(q=>({q:q.q,fact:q.fact,opts:q.opts.map(k=>({html:icon(k),label:ORGANS[k].name,ok:k===q.ans}))}));
+  quiz(qs,{autoNext:true,sayWrong:true});
+}
+function actHabits(){
+  say('Is it a healthy habit? Drag each card to the right box.');
+  const items=shuffle(HABITS.filter(h=>h.t==='yes')).slice(0,3).concat(shuffle(HABITS.filter(h=>h.t==='no')).slice(0,3));
+  dragMatch([{id:'yes',html:'💚',label:'Healthy habit',c:'#4CC38A'},{id:'no',html:'🙈',label:'Not so healthy',c:'#FF8FAB'}],items,'two','You know lots of healthy habits!');
+}
+/* ---------- Super Explorer ---------- */
+function actSystems(){
+  say('Your body has teams of parts that work together, called systems. Tap each one to learn about it.');
+  stage.innerHTML=`<div class="split"><div class="sys-grid">${SYSTEMS.map(s=>`<button class="sys-card" data-s="${s.id}" style="--c:${s.c}">${s.icon}<span>${s.name}</span></button>`).join('')}</div><div class="side"><div class="info-card sys" id="info"><div class="info-name" style="text-align:center">Pick a system!</div><div class="info-text" style="text-align:center">Six body teams to discover.</div></div><div style="text-align:center"><button class="big-btn pulse hidden" id="doneBtn">✅ All done!</button></div></div></div>`;
+  const seen=new Set();
+  $$('.sys-card').forEach(b=>onTap(b,()=>{
+    const s=SYSTEMS.find(x=>x.id===b.dataset.s);SFX.pop();seen.add(s.id);b.classList.add('seen');
+    $$('.sys-card').forEach(c=>c.classList.toggle('active',c===b));
+    const info=$('#info');info.innerHTML=`<div class="info-name">${s.name}</div><div style="font-weight:800;opacity:.6;font-size:18px">${s.full}</div><ul class="facts">${s.facts.map(f=>`<li>${f}</li>`).join('')}</ul>`;
+    info.classList.remove('pop');void info.offsetWidth;info.classList.add('pop');
+    say(`The ${s.full}. `+s.facts.join(' '));
+    if(seen.size===SYSTEMS.length)$('#doneBtn').classList.remove('hidden');
+  }));
+  onTap($('#doneBtn'),()=>{SFX.tap();finishAct();});
+}
+function actFood(){
+  say("Where does food go after you take a bite? Tap the parts in order, starting with the first stop.");
+  stage.innerHTML=`<div class="order"><div class="path">${FOOD_STEPS.map((s,i)=>`<div class="slot" data-i="${i}"><span class="slot-n">${i+1}</span></div>`).join('<div class="arrow">➜</div>')}</div><div class="q-fact" id="oFact">🍎 Tap the first stop!</div><div class="o-tray">${shuffle(FOOD_STEPS).map(s=>`<button class="o-card" data-id="${s.id}" data-n="${FOOD_STEPS.indexOf(s)}">${s.html}<span>${s.label}</span></button>`).join('')}</div></div>`;
+  let n=0,locked=false;
+  $$('.o-card').forEach(c=>onTap(c,()=>{
+    if(locked||c.classList.contains('used'))return;
+    if(+c.dataset.n===n){const s=FOOD_STEPS[n];const slot=$(`.slot[data-i="${n}"]`);slot.innerHTML=`<span class="slot-n">${n+1}</span>${s.html}<span class="s-label">${s.label}</span>`;slot.classList.add('filled');c.classList.add('used');SFX.good();$('#oFact').textContent='✅ '+s.fact;n++;
+      if(n===FOOD_STEPS.length){locked=true;const m=s.fact+' You followed food all the way through!';say(m);later(finishAct,readMs(m));}else say(s.fact);}
+    else{mistake();SFX.oops();shakeEl(c);say(n===0?'Hmm, where does food go first?':`Not yet! What comes after the ${FOOD_STEPS[n-1].label.toLowerCase()}?`);}
+  }));
+}
+function actMatch(){
+  say('Which team does each part belong to? Drag it to its body system.');
+  const T=[['circulatory','Circulatory','moves blood'],['respiratory','Respiratory','breathing'],['nervous','Nervous','sends messages'],['digestive','Digestive','breaks down food'],['skeletal','Skeletal','bones'],['muscular','Muscular','movement']];
+  const cs=['#FF6B6B','#4DB6FF','#9B8CFF','#FF9F1C','#C9A66B','#FF6FA3'];
+  const items=[{html:icon('heart'),label:'Heart',t:'circulatory',fb:'Yes! The heart is part of the circulatory system.'},{html:icon('lungs'),label:'Lungs',t:'respiratory',fb:'Yes! The lungs are part of the respiratory system.'},{html:icon('brain'),label:'Brain',t:'nervous',fb:'Yes! The brain is the center of the nervous system.'},{html:icon('stomach'),label:'Stomach',t:'digestive',fb:'Yes! The stomach is part of the digestive system.'},{html:'🦴',label:'Bones',t:'skeletal',fb:'Yes! Bones make up the skeletal system.'},{html:'💪',label:'Biceps',t:'muscular',fb:'Yes! The biceps is a muscle in your arm.'}];
+  dragMatch(T.map((t,i)=>({id:t[0],html:'',label:t[1],sub:t[2],c:cs[i]})),items,'','You matched every system!');
+}
+function actQuiz(){
+  const qs=shuffle(SUPER_Q).slice(0,8).map(q=>({q:q.q,fact:q.fact,opts:q.o.map(o=>({html:o[1],label:o[0],ok:!!o[2]}))}));
+  quiz(qs,{text:true});
+}
+
+/* ---------- grown-up area (press and hold) ---------- */
+(function(){
+  const b=$('#btnGrown');let start=0,raf=0;
+  const cancel=()=>{if(!start)return;cancelAnimationFrame(raf);b.style.setProperty('--p',0);if(performance.now()-start<1800)toast('Grown-ups: press and hold ⚙️');start=0;};
+  b.addEventListener('pointerdown',e=>{e.preventDefault();start=performance.now();const tick=()=>{if(!start)return;const p=Math.min(1,(performance.now()-start)/1800);b.style.setProperty('--p',p);if(p>=1){start=0;b.style.setProperty('--p',0);openGrown();}else raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);});
+  ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,cancel));
+  b.addEventListener('contextmenu',e=>e.preventDefault());
+})();
+function openGrown(){
+  try{speechSynthesis.cancel();}catch(e){}
+  const m=openModal(`<div class="card grown"><h2>👋 Grown-up Corner</h2>
+   <h3>Level</h3><div class="seg" id="gLevel">${LEVELS.map(l=>`<button data-l="${l.id}" class="${S.level===l.id?'on':''}">${l.emoji} ${l.name}<br><small>ages ${l.ages} · ⭐ ${levelStars(l.id)}/${l.acts.length*3}</small></button>`).join('')}</div>
+   <h3>Sound</h3><div class="seg"><button id="gSfx" class="${S.muted?'':'on'}">🔊 Sound ${S.muted?'off':'on'}</button><button id="gVoice" class="${S.voice?'on':''}">🗣️ Read aloud ${S.voice?'on':'off'}</button><button id="gSlow" class="${S.slow?'on':''}">🐢 Slow voice ${S.slow?'on':'off'}</button></div>
+   <h3>Progress</h3><div style="font-weight:800">⭐ ${totalStars()} stars · 📒 ${S.stickers.length} of ${Object.keys(ACTS).length} stickers</div>
+   <div class="seg" style="margin-top:10px"><button id="gReset" class="danger">🗑️ Reset progress</button></div>
+   <div class="row"><button class="big-btn" id="gClose">Done</button></div>
+   <div class="note">Progress is saved on this device. Little Explorer always awards 3 stars; Big and Super Explorer award 1–3 stars based on tries. Tip: in Safari use Share → Add to Home Screen for a full-screen app.</div></div>`);
+  $$('#gLevel button',m).forEach(b=>onTap(b,()=>{S.level=b.dataset.l;save();openGrown();}));
+  onTap($('#gSfx',m),()=>{S.muted=!S.muted;save();updateTop();openGrown();});
+  onTap($('#gVoice',m),()=>{S.voice=!S.voice;save();openGrown();});
+  onTap($('#gSlow',m),()=>{S.slow=!S.slow;save();openGrown();});
+  const r=$('#gReset',m);let armed=false;
+  onTap(r,()=>{if(!armed){armed=true;r.classList.add('armed');r.textContent='Tap again to erase all stars & stickers';setTimeout(()=>{if(r.isConnected){armed=false;r.classList.remove('armed');r.textContent='🗑️ Reset progress';}},4000);return;}
+    S.stars={};S.stickers=[];save();updateTop();toast('Progress reset');openGrown();});
+  onTap($('#gClose',m),()=>{closeModal();showMap();});
+}
+
+/* ---------- boot ---------- */
+(function(){
+  const bg=$('#bg');for(let i=0;i<14;i++){const c=document.createElement('div');c.className='cell';const s=40+Math.random()*130;c.style.width=c.style.height=s+'px';c.style.left=Math.random()*100+'vw';c.style.animationDuration=(18+Math.random()*22)+'s';c.style.animationDelay=(-Math.random()*40)+'s';bg.appendChild(c);}
+  $('#pipWrap').innerHTML=PIP;$('.pipbig').innerHTML=PIP;updateTop();
+  onTap($('#btnStart'),()=>{ac();SFX.good();$('#splash').remove();showHome();});
+  document.addEventListener('gesturestart',e=>e.preventDefault());
+})();
+</script>
+</body>
+</html>
