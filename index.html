@@ -40,6 +40,13 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 .pip-eyes{animation:blink 4s infinite;transform-box:fill-box;transform-origin:center}
 @keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
 #pipWrap.talk svg{animation:talk .35s ease-in-out 3}
+.pip-mic,.pip-spark{display:none}
+#pipWrap.cheer .pip-mic,#pipWrap.cheerbig .pip-mic,#pipWrap.cheer .pip-spark,#pipWrap.cheerbig .pip-spark{display:inline}
+#pipWrap.cheer .pip-spark path,#pipWrap.cheerbig .pip-spark path{animation:twinkle .45s ease-in-out infinite alternate}
+@keyframes twinkle{from{fill:#FFF36B}to{fill:#FFFFFF}}
+#pipWrap.cheer svg{animation:cheer .5s ease-in-out 2}
+#pipWrap.cheerbig svg{animation:cheer .5s ease-in-out 5}
+@keyframes cheer{40%{transform:translateY(-14px) rotate(-6deg) scale(1.1)}70%{transform:translateY(-4px) rotate(5deg)}}
 @keyframes talk{50%{transform:scale(1.07) rotate(3deg)}}
 #pipWrap.nudge svg{animation:nudge .7s ease-in-out 2}
 @keyframes nudge{20%{transform:translateY(-18px) rotate(-12deg) scale(1.15)}40%{transform:translateY(0) rotate(10deg)}60%{transform:translateY(-10px) rotate(-8deg) scale(1.1)}80%{transform:rotate(5deg)}}
@@ -308,12 +315,27 @@ function musicNote(f,at,dur,vol){if(S.muted||!AC||!MUSIC)return;try{const o1=AC.
   o1.type='triangle';o2.type='sine';o1.frequency.value=f;o2.frequency.value=f*2;g2.gain.value=.3;
   g.gain.setValueAtTime(0.0001,at);g.gain.exponentialRampToValueAtTime(vol,at+.025);g.gain.setValueAtTime(vol*.75,at+Math.max(.06,dur*.55));g.gain.exponentialRampToValueAtTime(0.0001,at+dur);
   o1.connect(g);o2.connect(g2);g2.connect(g);g.connect(MUSIC);o1.start(at);o2.start(at);o1.stop(at+dur+.05);o2.stop(at+dur+.05);}catch(e){}}
+/* One synth voice: oscillator -> optional low-pass -> envelope -> master */
+function synth(f,at,dur,type,vol,cut){if(S.muted||!AC||!MASTER)return;try{const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;let n=o;
+  if(cut){const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=cut;o.connect(lp);n=lp;}
+  g.gain.setValueAtTime(0.0001,at);g.gain.exponentialRampToValueAtTime(vol,at+.015);g.gain.setValueAtTime(vol*.7,at+Math.max(.04,dur*.5));g.gain.exponentialRampToValueAtTime(0.0001,at+dur);
+  n.connect(g);g.connect(MASTER);o.start(at);o.stop(at+dur+.05);}catch(e){}}
+/* ORIGINAL victory jingle (composed for this game): ~2s sparkly synth-pop flourish in D major.
+   Lead: rising D-F#-A-D arpeggio, a B-D-E lift, then a held high F#; under it D / G / D chords, a bouncy bass and sparkle pings. */
+function victoryJingle(){const c=ac();if(!c||S.muted)return;const t=c.currentTime+.05;
+  const lead=[[587,0,.1],[740,.1,.1],[880,.2,.1],[1175,.3,.26],[988,.6,.1],[1175,.7,.1],[1319,.8,.34],[1175,1.2,.1],[1319,1.3,.1],[1480,1.4,.75]];
+  lead.forEach(([f,o,d])=>{synth(f,t+o,d,'square',.07,3200);synth(f,t+o,d,'triangle',.09);});
+  [[[294,370,440],0,.6],[[392,494,587],.6,.6],[[294,370,440,587],1.2,1.0]].forEach(([ch,o,d])=>ch.forEach(f=>synth(f,t+o,d,'sawtooth',.025,1400)));
+  [[147,0,.25],[147,.3,.25],[196,.6,.25],[196,.9,.25],[147,1.2,.8]].forEach(([f,o,d])=>synth(f,t+o,d,'triangle',.13));
+  [2349,2960,3520,2794,3136].forEach((f,i)=>synth(f,t+1.42+i*.09,.18,'sine',.05));
+}
+function cheerPip(big){const p=$('#pipWrap');if(!p)return;p.classList.remove('cheer','cheerbig');void p.offsetWidth;p.classList.add(big?'cheerbig':'cheer');clearTimeout(cheerPip.t);cheerPip.t=setTimeout(()=>p.classList.remove('cheer','cheerbig'),big?2600:1300);}
 const SFX={
   tap:()=>tone(660,0,.12,'sine',.1),
   pop:()=>{tone(520,0,.08,'sine',.14);tone(980,.05,.12,'sine',.1);},
-  good:()=>[523,659,784].forEach((f,i)=>tone(f,i*.09,.28,'triangle',.16)),
+  good:()=>{[523,659,784].forEach((f,i)=>tone(f,i*.09,.28,'triangle',.16));cheerPip();},
   oops:()=>{tone(392,0,.18,'sine',.1);tone(330,.14,.26,'sine',.1);},
-  win:()=>[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,i*.13,.32,'triangle',.15))
+  win:()=>{victoryJingle();cheerPip(true);}
 };
 
 /* ---------- speech ---------- */
@@ -331,8 +353,8 @@ function speak(text,force){
       if(ss.paused)ss.resume();
       const u=new SpeechSynthesisUtterance(clean);
       if(VOICE)u.voice=VOICE;u.lang=(VOICE&&VOICE.lang)||'en-US';
-      u.rate=S.slow?.85:.98;u.pitch=1.12;
-      const est=1500+clean.length*(S.slow?95:80);
+      u.rate=S.slow?.9:1.05;u.pitch=1.2; /* bright, upbeat; the grown-up 'slow voice' toggle keeps it gentle */
+      const est=1500+clean.length*(S.slow?90:76);
       const done=()=>{clearTimeout(duckTimer);duckMusic(false);};
       u.onend=done;u.onerror=done;
       duckMusic(true);clearTimeout(duckTimer);
@@ -359,6 +381,7 @@ function nudgePip(){const p=$('#pipWrap'),bb=$('#bubble');[p,bb].forEach(el=>{el
 onTap($('#btnHear'),()=>{ac();speak(lastSay,true);});
 
 /* ---------- art ---------- */
+function starPath(cx,cy,R,r){let d='';for(let i=0;i<10;i++){const a=Math.PI/5*i-Math.PI/2,rad=i%2?r:R;d+=(i?'L':'M')+(cx+rad*Math.cos(a)).toFixed(1)+' '+(cy+rad*Math.sin(a)).toFixed(1);}return d+'Z';}
 const PIP=`<svg viewBox="0 0 100 112" aria-hidden="true">
 <ellipse cx="50" cy="106" rx="26" ry="5" fill="rgba(40,20,90,.18)"/>
 <path d="M27 72 Q50 61 73 72 L77 99 Q50 108 23 99Z" fill="#FF8C42"/>
@@ -374,8 +397,9 @@ const PIP=`<svg viewBox="0 0 100 112" aria-hidden="true">
 <circle cx="35" cy="57" r="4.5" fill="#FF8FAB" opacity=".6"/><circle cx="65" cy="57" r="4.5" fill="#FF8FAB" opacity=".6"/>
 <path d="M43 60 Q50 67 57 60" stroke="#8A3B2A" stroke-width="2.6" fill="none" stroke-linecap="round"/>
 <path d="M22 32 Q30 15 44 11" stroke="#fff" stroke-width="3.5" fill="none" opacity=".85" stroke-linecap="round"/>
+<g class="pip-mic"><path d="M73 92 L83 70" stroke="#7C6CF2" stroke-width="5" stroke-linecap="round"/><circle cx="73" cy="92" r="5.5" fill="#F5C29A"/><path d="${starPath(85,62,13,5.5)}" fill="#FFD166" stroke="#fff" stroke-width="2"/></g>
+<g class="pip-spark" fill="#FFF36B" stroke="#fff" stroke-width="1"><path d="${starPath(10,22,6,2)}"/><path d="${starPath(92,30,5,1.8)}"/><path d="${starPath(8,74,4.5,1.6)}"/><path d="${starPath(94,98,4,1.4)}"/></g>
 </svg>`;
-function starPath(cx,cy,R,r){let d='';for(let i=0;i<10;i++){const a=Math.PI/5*i-Math.PI/2,rad=i%2?r:R;d+=(i?'L':'M')+(cx+rad*Math.cos(a)).toFixed(1)+' '+(cy+rad*Math.sin(a)).toFixed(1);}return d+'Z';}
 const GLOW=`<defs><filter id="glowF" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#FFF36B" flood-opacity="1"/><feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="#ffffff" flood-opacity="1"/></filter></defs>`;
 const SK='#F5C29A',SK2='#E3A47A',HAIR='#7A4A2A',SHIRT='#FF7BAC',SKIRT='#7C6CF2',SHOE='#FF9F1C';
 const KID_SVG=`<svg viewBox="0 0 300 500" preserveAspectRatio="xMidYMid meet">${GLOW}
@@ -428,8 +452,8 @@ const HAND_SHAPE=`<rect x="74" y="236" width="62" height="60" rx="16"/><rect x="
 const HANDS_SVG=`<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet"><g fill="${SK}" stroke="${SK2}" stroke-width="3">${HAND_SHAPE}</g><g transform="translate(400 0) scale(-1 1)" fill="${SK}" stroke="${SK2}" stroke-width="3">${HAND_SHAPE}</g></svg>`;
 function germSVG(c1,c2){return `<svg viewBox="0 0 60 60"><path d="M30 6 C40 3 45 12 51 14 C59 19 54 28 56 34 C58 44 48 50 40 52 C32 58 24 54 18 52 C8 50 3 42 6 32 C4 22 10 15 16 12 C20 8 24 7 30 6Z" fill="${c1}" stroke="${c2}" stroke-width="3"/><circle cx="16" cy="20" r="3" fill="${c2}" opacity=".5"/><circle cx="46" cy="40" r="3.5" fill="${c2}" opacity=".5"/><circle cx="23" cy="28" r="5" fill="#fff"/><circle cx="37" cy="28" r="5" fill="#fff"/><circle cx="24" cy="29" r="2.6" fill="#2B2140"/><circle cx="38" cy="29" r="2.6" fill="#2B2140"/><path d="M23 38 Q30 44 37 38" stroke="#2B2140" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`;}
 /* ---------- content ---------- */
-const PRAISE=['Great job!','You got it!','Wonderful!','Yes! Super!','Way to go!','Brilliant!','Awesome!','Fantastic!'];
-const TRY=['Hmm, try again!','Almost! Try another one.','Good try! Pick again.','Oops! Have another go.'];
+const PRAISE=['Woo-hoo! Superstar!','You got it, star!','Sparkly smart!','Yes! Big round of applause!','Wow, you shine so bright!','High five, superstar!','Star power!','Perfect! Take a bow!'];
+const TRY=['Ooh, so close! Try again, star!','Almost! You’ve got this!','Good try! One more time!','No worries, superstars keep trying!'];
 const LITTLE_PARTS={
  head:{name:'Head',icon:'🙂',fact:'Your head holds your brain, which helps you think.'},
  hair:{name:'Hair',icon:'🎀',fact:'Hair helps keep your head warm.'},
@@ -570,7 +594,7 @@ function reset(){clearTimers();cur=null;closeModal();$$('.confetti').forEach(c=>
 
 function showHome(){
   reset();setTop("Lenny Bean's Body Explorer",null);
-  say("Hi Lenny Bean! I'm Pip, a tiny explorer. Let's explore the amazing human body! Pick an adventure.");
+  say("Hi Lenny Bean! I'm Pip, your sparkly body explorer! Ready to shine? Pick an adventure!");
   stage.innerHTML=`<div class="home"><h1 class="logo"><small>Lenny Bean's</small>Body Explorer</h1>
   <div class="levels">${LEVELS.map(l=>`<button class="level-card" data-level="${l.id}" style="--c:${l.c}">${l.id===S.level?'<span class="lv-now">⭐ My level</span>':''}<div class="lv-emoji">${l.emoji}</div><div class="lv-text"><div class="lv-name">${l.name}</div><div class="lv-age">Ages ${l.ages}</div><div class="lv-stars">⭐ ${levelStars(l.id)} / ${l.acts.length*3}</div></div></button>`).join('')}</div>
   <button class="big-btn pinkb" id="btnBook">📒 My Stickers (${S.stickers.length})</button></div>`;
@@ -579,7 +603,7 @@ function showHome(){
 }
 function showMap(){
   reset();const L=lvl();setTop(L.name,showHome,'🏠');
-  say(L.name+'! Pick an adventure.');
+  say(L.name+'! Lights on, star! Pick an adventure.');
   stage.innerHTML=`<div class="map"><h2>${L.emoji} ${L.name}</h2><div class="acts">${L.acts.map((id,i)=>{const a=ACTS[id];return `<button class="act-card" data-act="${id}" style="--i:${i};--c:${a.c}"><div class="act-emoji">${a.emoji}</div><div class="act-name">${a.name}</div>${starStr(S.stars[id]||0)}</button>`;}).join('')}</div></div>`;
   $$('.act-card').forEach(b=>onTap(b,()=>{SFX.tap();startAct(b.dataset.act);}));
 }
@@ -591,8 +615,8 @@ function finishAct(){
   S.stars[id]=Math.max(S.stars[id]||0,stars);
   const fresh=S.stickers.indexOf(id)<0;if(fresh)S.stickers.push(id);
   save();updateTop();SFX.win();confetti();
-  const msg=pick(['Amazing job, Lenny Bean!','You did it, Lenny Bean!','Super exploring!','Wow, what a great explorer!']);
-  say(msg+(fresh?' You earned a new sticker!':''));
+  const msg=pick(['Standing ovation, Lenny Bean!','You’re a shining star, Lenny Bean!','Superstar explorer!','Take a bow, Lenny Bean!','What a show, Lenny Bean!']);
+  say(msg+(fresh?' You earned a sparkly new sticker!':' You shine every time!'));
   const m=openModal(`<div class="card"><div class="big-stars">${[0,1,2].map(i=>`<span class="${i<stars?'on':'off'}" style="animation-delay:${.15+i*.2}s">★</span>`).join('')}</div><h2>${msg}</h2>
    <div style="font-size:22px;font-weight:800;margin-bottom:16px">${fresh?'New sticker!':'Your sticker:'}</div><div class="sticker">${a.sticker}</div>
    <div class="row"><button class="big-btn alt" id="mAgain">🔁 Again</button><button class="big-btn" id="mMore">🗺️ More</button></div></div>`);
@@ -705,7 +729,7 @@ function dragMatch(targets,items,cls,doneMsg){
 }
 
 /* ---------- Little Explorer ---------- */
-function actTapLearn(){exploreBody(KID_SVG,LITTLE_PARTS,'Tap a body part to hear its name!','You found every part! Tap All done when you are ready.');}
+function actTapLearn(){exploreBody(KID_SVG,LITTLE_PARTS,'Tap a body part to hear its name! Ready, set, sparkle!','You found every part, superstar! Tap All done when you are ready.');}
 function actFindPart(){findGame(KID_SVG,LITTLE_PARTS,5);}
 function actUse(){
   const qs=shuffle(USE_Q).slice(0,5).map(([q,ans,fact])=>{const others=shuffle(Object.keys(USE_OPTS).filter(k=>k!==ans)).slice(0,2);
@@ -725,8 +749,8 @@ function actWash(){
   const NOTES=[[392,.75],[392,.25],[440,1],[392,1],[523,1],[494,2],[392,.75],[392,.25],[440,1],[392,1],[587,1],[523,2],[392,.75],[392,.25],[784,1],[659,1],[523,1],[494,1],[440,2],[698,.75],[698,.25],[659,1],[523,1],[587,1],[523,2]];
   const BEAT=.4; /* seconds; 25 beats + 1 rest = ~10s per Happy Birthday, so about twice in 20s of washing */
   const starts=[];let acc=0;NOTES.forEach(n=>{starts.push(acc);acc+=n[1];});const LOOP=(acc+1)*BEAT;
-  const TIPS={5:'Five! Scrub your palms!',10:'Ten! Halfway there! Scrub between your fingers!',15:'Fifteen! Now the backs of your hands!'};
-  const REMIND=['Keep scrubbing! Rub rub rub!','Keep washing, Lenny Bean! Scrub scrub scrub!','Don’t stop! Keep rubbing your hands!','More bubbles! Keep scrubbing!'];
+  const TIPS={5:'Five! Scrub those palms, superstar!',10:'Ten! Halfway there! Now between your fingers!',15:'Fifteen! Backs of your hands, big finish coming!'};
+  const REMIND=['Keep scrubbing, superstar! Rub rub rub!','The show’s not over! Keep washing, Lenny Bean!','Bubbles up! Keep scrubbing!','Keep going, star! Scrub scrub scrub!'];
   const cols=[['#9BE58B','#5DB04C'],['#C7A6FF','#8E68E0'],['#FFC27A','#E39235'],['#8FD8FF','#3FA6DD']];
   const SPOTS=[[100,180],[76,228],[132,226],[58,74],[116,62],[300,180],[324,228],[268,226],[342,74],[284,62],[88,120],[312,120]];
   say('Time to wash our hands! Tap the soap to start.');
@@ -806,21 +830,21 @@ function actWash(){
   function finishScrub(){
     phase='rinse';scrubbed=GOAL;drawProgress();zone.classList.remove('paused','idle');hint.classList.add('hidden');remind.classList.add('hidden');musicBase=1;setMusicLevel();
     SFX.good();germs.slice().forEach(g=>{g.hp=1;washGerm(g,performance.now()+999);});
-    say('Twenty! You scrubbed for 20 whole seconds! Now tap Rinse to wash the bubbles away.');
+    say('Twenty! What a performance! Now tap Rinse to wash the bubbles away.');cheerPip(true);
     $('#rinseBtn').classList.remove('hidden');$('#rinseBtn').classList.add('pulse');
   }
   onTap($('#rinseBtn'),()=>{
     if(phase!=='rinse')return;phase='done';SFX.tap();$('#rinseBtn').classList.add('hidden');
     for(let k=0;k<26;k++){const d=document.createElement('span');d.className='drop';d.textContent='💧';d.style.left=(5+Math.random()*90)+'%';d.style.animationDelay=(Math.random()*1.2)+'s';hw.appendChild(d);setTimeout(()=>d.remove(),2600);}
     foam.classList.add('rinse');
-    const m='Splish splash! Sparkly clean hands! Soap, scrubbing and water wash germs away.';say(m);
+    const m='Splish splash! Sparkly clean, superstar hands! Soap, scrubbing and water wash germs away.';say(m);
     later(()=>{hw.classList.add('sparkle');},1400);later(finishAct,Math.max(3500,readMs(m)-800));
   });
   onTap($('#soapBtn'),()=>{
-    if(phase!=='soap')return;phase='scrub';unlockAudio();SFX.pop();$('#soapBtn').remove();lastAct=performance.now()+4000;/* give the intro time before the first reminder */songT0=null;musicBase=1;setMusicLevel();scheduleSong();
+    if(phase!=='soap')return;phase='scrub';unlockAudio();SFX.pop();$('#soapBtn').remove();lastAct=performance.now()+5000;/* give the intro time before the first reminder */songT0=null;musicBase=1;setMusicLevel();scheduleSong();
     const r=hw.getBoundingClientRect();bubbles(r.width*.25,r.height*.6,5);bubbles(r.width*.75,r.height*.6,5);
     for(let i=0;i<5;i++)addGerm();hint.classList.remove('hidden');lastTick=performance.now();
-    say('Rub your fingers on the hands to scrub! Let’s wash for 20!');
+    say('Soap is on! Rub the hands and let’s wash for 20. Lights, camera, bubbles!');
   });
   drawProgress();lastTick=performance.now();
   timers.push(setInterval(tick,100));
@@ -831,7 +855,7 @@ function actSenses(){
   const items=SENSES.map(s=>pick(SENSE_ITEMS.filter(i=>i.t===s.id)));
   dragMatch(SENSES.map(s=>({id:s.id,html:s.html,label:s.label,c:s.c})),items,'','You know all five senses!');
 }
-function actInside(){exploreBody(ORGAN_SVG,ORGANS,'Peek inside! Tap each organ to learn what it does.','You explored every organ! Tap All done when you are ready.');}
+function actInside(){exploreBody(ORGAN_SVG,ORGANS,'Backstage pass! Peek inside and tap each organ to learn what it does.','You explored every organ, star! Tap All done when you are ready.');}
 function actFindOrgan(){findGame(ORGAN_SVG,ORGANS,5);}
 function actOrganQuiz(){
   const qs=shuffle(ORGAN_Q).map(q=>({q:q.q,fact:q.fact,opts:q.opts.map(k=>({html:icon(k),label:ORGANS[k].name,ok:k===q.ans}))}));
