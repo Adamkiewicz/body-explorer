@@ -151,16 +151,38 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 .o-card svg{width:66%;height:56%}
 .o-card span{font-size:clamp(16px,2.2vmin,20px);font-weight:900}
 .o-card.used{visibility:hidden}
-.wash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;gap:10px}
-.hands-wrap{position:relative}
-.hands-wrap>svg{position:absolute;inset:0;width:100%;height:100%}
-.germ{position:absolute;width:clamp(66px,10vmin,96px);height:clamp(66px,10vmin,96px);transform:translate(-50%,-50%);border:none;background:none;padding:0;animation:wobble 1.6s ease-in-out infinite}
+.wash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;gap:12px;touch-action:none}
+.wash-top{display:flex;align-items:center;gap:18px;justify-content:center}
+.ring{--p:0;width:clamp(86px,13vmin,116px);height:clamp(86px,13vmin,116px);border-radius:50%;background:conic-gradient(#4DB6FF calc(var(--p) * 1turn),rgba(255,255,255,.55) 0);display:grid;place-items:center;box-shadow:0 6px 0 rgba(40,20,90,.15);transition:filter .3s}
+.ring-in{width:76%;height:76%;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.ring-in span{font-size:clamp(34px,5.6vmin,50px);font-weight:900;color:var(--purple)}
+.ring-in small{font-size:14px;font-weight:800;opacity:.6}
+.wdots{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.wdot{width:clamp(26px,4vmin,38px);height:clamp(26px,4vmin,38px);border-radius:50%;border:3px solid rgba(255,255,255,.95);background:rgba(255,255,255,.25);display:grid;place-items:center;font-size:clamp(11px,1.6vmin,15px);font-weight:900;color:rgba(255,255,255,.95)}
+.wdot.on{background:radial-gradient(circle at 30% 30%,#fff,#8FD8FF 55%,#4DB6FF);color:#24507a;border-color:#fff}
+.wdot.popnow{animation:bump .4s}
+.wash.paused .ring{filter:grayscale(1) opacity(.7)}
+.hands-wrap{position:relative;touch-action:none}
+.hands-wrap>svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.hands-wrap.sparkle::after{content:"✨ ✨ ✨";position:absolute;left:0;right:0;top:40%;text-align:center;font-size:54px;animation:popIn .5s}
+.foam-layer{position:absolute;inset:0;pointer-events:none;transition:opacity 1.6s}
+.foam-layer.rinse{opacity:0}
+.foam{position:absolute;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,rgba(220,240,255,.85) 55%,rgba(160,210,255,.5));border:2px solid rgba(255,255,255,.95);animation:popIn .25s}
+.germ{--s:1;position:absolute;width:clamp(60px,9vmin,86px);height:clamp(60px,9vmin,86px);transform:translate(-50%,-50%) scale(var(--s));pointer-events:none;animation:wobble 1.6s ease-in-out infinite;transition:transform .2s}
 .germ svg{width:100%;height:100%}
-.germ.gone{animation:poof .5s forwards;pointer-events:none}
-@keyframes wobble{50%{transform:translate(-50%,-50%) rotate(8deg) scale(1.06)}}
+.germ.gone{animation:poof .5s forwards}
+@keyframes wobble{50%{transform:translate(-50%,-50%) scale(var(--s)) rotate(8deg)}}
 @keyframes poof{to{transform:translate(-50%,-50%) scale(1.8);opacity:0}}
 .bub{position:absolute;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,rgba(180,230,255,.6) 50%,rgba(140,200,255,.25));border:2px solid rgba(255,255,255,.9);pointer-events:none;animation:bubUp 1.4s ease-out forwards}
 @keyframes bubUp{to{transform:translateY(-120px) scale(1.3);opacity:0}}
+.wash-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3}
+.soap-btn,.rinse-btn{pointer-events:auto;min-height:96px;font-size:clamp(30px,5vmin,42px);padding:0 40px}
+.rinse-btn{background:var(--blue);box-shadow:0 6px 0 #2F8FD6}
+.wash-hint{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);background:#fff;border-radius:999px;padding:8px 20px;font-size:clamp(20px,3vmin,28px);font-weight:900;box-shadow:0 5px 0 rgba(40,20,90,.15);pointer-events:none;z-index:2;white-space:nowrap}
+.wash.idle .wash-hint{animation:pulseH 1s ease-in-out infinite}
+@keyframes pulseH{50%{transform:translateX(-50%) scale(1.1)}}
+.drop{position:absolute;top:-10%;font-size:34px;pointer-events:none;animation:dropFall 1.3s ease-in forwards}
+@keyframes dropFall{to{transform:translateY(420px);opacity:0}}
 .sys-grid{flex:1.15;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;min-height:0}
 .sys-card{border:none;border-radius:26px;background:var(--c);box-shadow:0 6px 0 rgba(40,20,90,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px;font-size:clamp(40px,6.5vmin,60px);line-height:1;position:relative}
 .sys-card svg{width:clamp(48px,8vmin,72px);height:clamp(48px,8vmin,72px)}
@@ -639,21 +661,98 @@ function actCount(){
   quiz(qs,{autoNext:true});
 }
 function actWash(){
-  say('Oh no, silly germs! Tap them to wash them away with soap bubbles.');
-  const spots=shuffle([[100,180],[76,228],[132,226],[58,74],[116,62],[300,180],[324,228],[268,226],[342,74],[284,62]]).slice(0,8);
+  /* 20 seconds of real scrubbing. Scrub = finger/mouse moving or tapping on the hands area.
+     The timer only runs while she is scrubbing (pauses ~0.9s after the last movement), and a gentle
+     "keep scrubbing" prompt plays after 2s idle. Time is wall-clock based, so many fingers or fast taps
+     can never make it go faster than real time. */
+  const GOAL=20000,GRACE=900,PROMPT=2000;
+  const NOTES=[[392,.75],[392,.25],[440,1],[392,1],[523,1],[494,2],[392,.75],[392,.25],[440,1],[392,1],[587,1],[523,2],[392,.75],[392,.25],[784,1],[659,1],[523,1],[494,1],[440,2],[698,.75],[698,.25],[659,1],[523,1],[587,1],[523,2]];
+  const BEAT=400; /* 25 beats x 0.4s = one Happy Birthday every 10s, two times in 20s */
+  const starts=[];let acc=0;NOTES.forEach(n=>{starts.push(acc);acc+=n[1];});const SONG=acc*BEAT;
+  const TIPS={5:'Five! Scrub your palms!',10:'Ten! Halfway there! Scrub between your fingers!',15:'Fifteen! Now the backs of your hands!'};
   const cols=[['#9BE58B','#5DB04C'],['#C7A6FF','#8E68E0'],['#FFC27A','#E39235'],['#8FD8FF','#3FA6DD']];
-  stage.innerHTML=`<div class="wash"><div class="hands-wrap" id="hw">${HANDS_SVG}${spots.map(([x,y],i)=>{const c=cols[i%4];return `<button class="germ" style="left:${x/4}%;top:${y/3}%;animation-delay:${i*.15}s" aria-label="germ">${germSVG(c[0],c[1])}</button>`;}).join('')}</div><div class="progress" id="prog"></div></div>`;
-  let left=spots.length;const prog=$('#prog');progress(prog,spots.length,0);
-  const hw=$('#hw');
-  const fit=()=>{if(!hw.isConnected){window.removeEventListener('resize',fit);return;}const r=stage.getBoundingClientRect();const w=Math.max(200,Math.min(r.width-40,(r.height-80)*4/3));hw.style.width=w+'px';hw.style.height=(w*.75)+'px';};
+  const SPOTS=[[100,180],[76,228],[132,226],[58,74],[116,62],[300,180],[324,228],[268,226],[342,74],[284,62],[88,120],[312,120]];
+  say('Time to wash our hands! Tap the soap to start.');
+  stage.innerHTML=`<div class="wash" id="washZone">
+    <div class="wash-top"><div class="ring" id="ring"><div class="ring-in"><span id="washCount">0</span><small>of 20</small></div></div>
+      <div class="wdots" id="wdots">${Array.from({length:20},(_,i)=>`<span class="wdot">${i+1}</span>`).join('')}</div></div>
+    <div class="hands-wrap" id="hw">${HANDS_SVG}<div class="foam-layer" id="foam"></div>
+      <div class="wash-center"><button class="big-btn pinkb pulse soap-btn" id="soapBtn">🧼 Soap!</button><button class="big-btn rinse-btn hidden" id="rinseBtn">💧 Rinse!</button></div>
+      <div class="wash-hint hidden" id="washHint">👆 Rub rub rub!</div></div></div>`;
+  const zone=$('#washZone'),hw=$('#hw'),foam=$('#foam'),ring=$('#ring'),countEl=$('#washCount'),dots=$$('.wdot'),hint=$('#washHint');
+  const fit=()=>{if(!hw.isConnected){window.removeEventListener('resize',fit);return;}const r=stage.getBoundingClientRect(),top=$('.wash-top').getBoundingClientRect().height;const w=Math.max(220,Math.min(r.width-40,(r.height-top-46)*4/3));hw.style.width=w+'px';hw.style.height=(w*.75)+'px';};
   fit();window.addEventListener('resize',fit);
-  $$('.germ').forEach(g=>onTap(g,()=>{
-    if(g.classList.contains('gone'))return;g.classList.add('gone');SFX.pop();
-    for(let k=0;k<4;k++){const b=document.createElement('div');b.className='bub';const s=14+Math.random()*26;b.style.width=b.style.height=s+'px';b.style.left=`calc(${g.style.left} + ${(Math.random()*60-30).toFixed(0)}px)`;b.style.top=`calc(${g.style.top} + ${(Math.random()*30-15).toFixed(0)}px)`;b.style.animationDelay=k*.08+'s';hw.appendChild(b);setTimeout(()=>b.remove(),1700);}
-    left--;progress(prog,spots.length,spots.length-left);
-    if(left>0){say(pick(['Pop!','Bye bye, germ!','Scrub scrub!','Bubbles!','Splish splash!']));}
-    else{const m='Sparkly clean hands! Soap and water wash germs away. Scrub for 20 seconds, as long as singing Happy Birthday two times!';say(m);later(finishAct,readMs(m)-1500);}
-  }));
+  let phase='soap',scrubbed=0,lastScrub=0,lastTick=0,lastSec=0,noteI=0,lastPrompt=0,lastFoam=0,germs=[],nextSpawn=2500;
+  const last={};
+  function addGerm(){
+    const used=germs.map(g=>g.spot);const free=SPOTS.map((s,i)=>i).filter(i=>used.indexOf(i)<0);if(!free.length)return;
+    const si=pick(free),[x,y]=SPOTS[si],c=pick(cols);const el=document.createElement('div');el.className='germ';
+    el.style.left=(x/4)+'%';el.style.top=(y/3)+'%';el.innerHTML=germSVG(c[0],c[1]);hw.insertBefore(el,foam.nextSibling);
+    germs.push({el,spot:si,x:x/400,y:y/300,hp:3,hitAt:0});
+  }
+  function bubbles(px,py,n){for(let k=0;k<n;k++){const b=document.createElement('div');b.className='bub';const s=14+Math.random()*24;b.style.width=b.style.height=s+'px';b.style.left=(px+Math.random()*50-25)+'px';b.style.top=(py+Math.random()*30-15)+'px';b.style.animationDelay=k*.07+'s';hw.appendChild(b);setTimeout(()=>b.remove(),1600);}}
+  function washGerm(g,now){
+    if(now-g.hitAt<160)return;g.hitAt=now;g.hp--;
+    if(g.hp>0){g.el.style.setProperty('--s',(.55+g.hp*.15).toFixed(2));SFX.tap();return;}
+    germs.splice(germs.indexOf(g),1);g.el.classList.add('gone');setTimeout(()=>g.el.remove(),600);SFX.pop();
+    const r=hw.getBoundingClientRect();bubbles(g.x*r.width,g.y*r.height,4);
+  }
+  function scrubAt(cx,cy,now){
+    const r=hw.getBoundingClientRect();const px=cx-r.left,py=cy-r.top;
+    if(px<-40||py<-40||px>r.width+40||py>r.height+40)return; /* only scrubbing on/near the hands counts */
+    lastScrub=now;hint.classList.add('hidden');zone.classList.remove('idle');
+    if(now-lastFoam>70){lastFoam=now;const f=document.createElement('span');f.className='foam';const s=16+Math.random()*30;f.style.width=f.style.height=s+'px';f.style.left=(px/r.width*100)+'%';f.style.top=(py/r.height*100)+'%';foam.appendChild(f);if(foam.children.length>60)foam.firstChild.remove();}
+    germs.slice().forEach(g=>{if(Math.hypot(g.x*r.width-px,g.y*r.height-py)<Math.max(48,r.width*.11))washGerm(g,now);});
+  }
+  /* Pointer events cover touch, pen and mouse on iPad Safari 13+. Touch listeners only stop scrolling/zoom (no counting = no double count). */
+  zone.addEventListener('pointerdown',e=>{if(phase!=='scrub')return;e.preventDefault();ac();last[e.pointerId]=[e.clientX,e.clientY];scrubAt(e.clientX,e.clientY,performance.now());});
+  zone.addEventListener('pointermove',e=>{if(phase!=='scrub')return;const p=last[e.pointerId];
+    if(e.pointerType==='mouse'&&!e.buttons)return; /* mouse must be pressed; touch always is */
+    if(p&&Math.hypot(e.clientX-p[0],e.clientY-p[1])<6)return;last[e.pointerId]=[e.clientX,e.clientY];scrubAt(e.clientX,e.clientY,performance.now());});
+  const endP=e=>{delete last[e.pointerId];};zone.addEventListener('pointerup',endP);zone.addEventListener('pointercancel',endP);
+  const stopScroll=e=>{if(e.target.closest&&e.target.closest('button'))return; /* let buttons (Soap, Rinse) receive their tap */ if(e.cancelable)e.preventDefault();};
+  zone.addEventListener('touchstart',stopScroll,{passive:false});zone.addEventListener('touchmove',stopScroll,{passive:false});
+  function drawProgress(){const s=Math.min(20,Math.floor(scrubbed/1000));countEl.textContent=s;ring.style.setProperty('--p',(scrubbed/GOAL).toFixed(3));dots.forEach((d,i)=>d.classList.toggle('on',i<s));}
+  function tick(){
+    if(!hw.isConnected)return;const now=performance.now(),dt=Math.min(250,now-lastTick);lastTick=now;
+    if(phase!=='scrub')return;
+    const active=lastScrub&&now-lastScrub<=GRACE;
+    zone.classList.toggle('paused',!active&&scrubbed>0);
+    if(active){
+      scrubbed=Math.min(GOAL,scrubbed+dt);
+      while(noteI<NOTES.length*2&&scrubbed>=(Math.floor(noteI/NOTES.length)*SONG+starts[noteI%NOTES.length]*BEAT)){const n=NOTES[noteI%NOTES.length];tone(n[0],0,n[1]*BEAT/1000*.9,'triangle',.07);noteI++;}
+      if(scrubbed>=nextSpawn&&scrubbed<GOAL-3000){nextSpawn+=2500;if(germs.length<3)addGerm();}
+      const sec=Math.floor(scrubbed/1000);
+      if(sec>lastSec){lastSec=sec;dots[sec-1]&&dots[sec-1].classList.add('popnow');
+        if(sec>=20){finishScrub();return;}
+        say(TIPS[sec]||(sec+'!'));}
+      drawProgress();
+    }else if(lastScrub&&now-lastScrub>PROMPT&&now-lastPrompt>6000){
+      lastPrompt=now;zone.classList.add('idle');hint.classList.remove('hidden');
+      say(pick(['Keep scrubbing! Rub rub rub!','Don’t stop, keep scrubbing!','More bubbles! Keep rubbing your hands!']));
+    }
+  }
+  function finishScrub(){
+    phase='rinse';scrubbed=GOAL;drawProgress();zone.classList.remove('paused','idle');hint.classList.add('hidden');
+    SFX.good();germs.slice().forEach(g=>{g.hp=1;washGerm(g,performance.now()+999);});
+    say('Twenty! You scrubbed for 20 whole seconds! Now tap Rinse to wash the bubbles away.');
+    $('#rinseBtn').classList.remove('hidden');$('#rinseBtn').classList.add('pulse');
+  }
+  onTap($('#rinseBtn'),()=>{
+    if(phase!=='rinse')return;phase='done';SFX.tap();$('#rinseBtn').classList.add('hidden');
+    for(let k=0;k<26;k++){const d=document.createElement('span');d.className='drop';d.textContent='💧';d.style.left=(5+Math.random()*90)+'%';d.style.animationDelay=(Math.random()*1.2)+'s';hw.appendChild(d);setTimeout(()=>d.remove(),2600);}
+    foam.classList.add('rinse');
+    const m='Splish splash! Sparkly clean hands! Soap, scrubbing and water wash germs away.';say(m);
+    later(()=>{hw.classList.add('sparkle');},1400);later(finishAct,Math.max(3500,readMs(m)-800));
+  });
+  onTap($('#soapBtn'),()=>{
+    if(phase!=='soap')return;phase='scrub';ac();SFX.pop();$('#soapBtn').remove();
+    const r=hw.getBoundingClientRect();bubbles(r.width*.25,r.height*.6,5);bubbles(r.width*.75,r.height*.6,5);
+    for(let i=0;i<5;i++)addGerm();hint.classList.remove('hidden');lastTick=performance.now();
+    say('Oh, silly germs! Rub your fingers on the hands to scrub scrub scrub. Let’s count to 20!');
+  });
+  drawProgress();lastTick=performance.now();
+  timers.push(setInterval(tick,100));
 }
 /* ---------- Big Explorer ---------- */
 function actSenses(){
