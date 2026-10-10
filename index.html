@@ -41,6 +41,10 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 @keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
 #pipWrap.talk svg{animation:talk .35s ease-in-out 3}
 @keyframes talk{50%{transform:scale(1.07) rotate(3deg)}}
+#pipWrap.nudge svg{animation:nudge .7s ease-in-out 2}
+@keyframes nudge{20%{transform:translateY(-18px) rotate(-12deg) scale(1.15)}40%{transform:translateY(0) rotate(10deg)}60%{transform:translateY(-10px) rotate(-8deg) scale(1.1)}80%{transform:rotate(5deg)}}
+#bubble.nudge{animation:bubNudge .7s ease-in-out 2}
+@keyframes bubNudge{30%{box-shadow:0 0 0 6px #FFD166,0 6px 0 rgba(40,20,90,.12);transform:scale(1.02)}}
 #bubble{position:relative;background:#fff;border-radius:26px;padding:10px 12px 10px 20px;flex:1;display:flex;align-items:center;gap:12px;min-height:70px;box-shadow:0 6px 0 rgba(40,20,90,.12)}
 #bubble::before{content:"";position:absolute;left:-14px;top:50%;margin-top:-12px;border:12px solid transparent;border-right:16px solid #fff;border-left:0}
 #bubbleText{flex:1;font-size:clamp(18px,2.7vmin,27px);font-weight:800;line-height:1.25}
@@ -180,6 +184,10 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 .rinse-btn{background:var(--blue);box-shadow:0 6px 0 #2F8FD6}
 .wash-hint{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);background:#fff;border-radius:999px;padding:8px 20px;font-size:clamp(20px,3vmin,28px);font-weight:900;box-shadow:0 5px 0 rgba(40,20,90,.15);pointer-events:none;z-index:2;white-space:nowrap}
 .wash.idle .wash-hint{animation:pulseH 1s ease-in-out infinite}
+.remind{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:4;pointer-events:none;background:#FFD166;color:#3b2a5a;border:5px solid #fff;border-radius:999px;padding:14px 30px;font-size:clamp(30px,5.4vmin,48px);font-weight:900;white-space:nowrap;box-shadow:0 8px 0 rgba(40,20,90,.2),0 0 0 10px rgba(255,209,102,.35);animation:remindPulse 1s ease-in-out infinite}
+.remind.pop{animation:remindIn .45s,remindPulse 1s ease-in-out .45s infinite}
+@keyframes remindPulse{50%{transform:translate(-50%,-50%) scale(1.08)}}
+@keyframes remindIn{from{transform:translate(-50%,-50%) scale(.3);opacity:0}}
 @keyframes pulseH{50%{transform:translateX(-50%) scale(1.1)}}
 .drop{position:absolute;top:-10%;font-size:34px;pointer-events:none;animation:dropFall 1.3s ease-in forwards}
 @keyframes dropFall{to{transform:translateY(420px);opacity:0}}
@@ -267,9 +275,39 @@ let S=Object.assign({},DEFAULTS,load());
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 
 /* ---------- sound ---------- */
-let AC=null;
-function ac(){try{if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(C)AC=new C();}if(AC&&AC.state==='suspended')AC.resume();}catch(e){}return AC;}
-function tone(f,t0,dur,type,vol){if(S.muted)return;const c=ac();if(!c)return;try{const o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.value=f;const t=c.currentTime+t0;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||.16,t+.02);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+dur+.05);}catch(e){}}
+let AC=null,MASTER=null,MUSIC=null,SILENT=null,musicBase=1,musicDuck=false,duckTimer=0;
+const SILENT_WAV='data:audio/wav;base64,UklGRvQHAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YdAHAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';
+/* Create/resume the AudioContext. Resumes from 'suspended' AND iOS 'interrupted'. */
+function ac(){
+  try{
+    if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;AC=new C();
+      MASTER=AC.createGain();MASTER.gain.value=1;MASTER.connect(AC.destination);
+      MUSIC=AC.createGain();MUSIC.gain.value=1;MUSIC.connect(MASTER);}
+    if(AC.state!=='running'){const p=AC.resume();if(p&&p.catch)p.catch(()=>{});}
+  }catch(e){}
+  return AC;
+}
+/* Called on EVERY user gesture (capture phase). On iOS this (a) asks for the 'playback' audio session so the
+   ring/silent switch doesn't mute the game, (b) plays a silent looping <audio> which switches older iOS to the
+   media channel too, (c) primes Web Audio with a silent buffer, and (d) un-sticks paused speech. */
+function unlockAudio(){
+  try{if(navigator.audioSession&&navigator.audioSession.type!=='playback')navigator.audioSession.type='playback';}catch(e){}
+  ac();
+  try{if(!SILENT){SILENT=document.createElement('audio');SILENT.src=SILENT_WAV;SILENT.loop=true;SILENT.setAttribute('playsinline','');SILENT.setAttribute('webkit-playsinline','');SILENT.preload='auto';}
+    if(SILENT.paused&&!S.muted){const p=SILENT.play();if(p&&p.catch)p.catch(()=>{});}}catch(e){}
+  try{if(AC&&!AC.__primed){const b=AC.createBuffer(1,1,22050),s=AC.createBufferSource();s.buffer=b;s.connect(AC.destination);s.start(0);AC.__primed=1;}}catch(e){}
+  try{if('speechSynthesis' in window&&speechSynthesis.paused)speechSynthesis.resume();}catch(e){}
+}
+['pointerdown','touchstart','touchend','mousedown','click','keydown'].forEach(t=>document.addEventListener(t,unlockAudio,{capture:true,passive:true}));
+/* music bus level = base (scrubbing vs idle) x duck (while Pip talks) */
+function setMusicLevel(){if(!MUSIC||!AC)return;try{const t=AC.currentTime,v=S.muted?0:musicBase*(musicDuck?.35:1);MUSIC.gain.cancelScheduledValues(t);MUSIC.gain.setTargetAtTime(v,t,.08);}catch(e){}}
+function duckMusic(on){musicDuck=on;setMusicLevel();}
+function tone(f,t0,dur,type,vol){if(S.muted)return;const c=ac();if(!c)return;try{const o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.value=f;const t=c.currentTime+t0;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||.16,t+.02);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(g);g.connect(MASTER);o.start(t);o.stop(t+dur+.05);}catch(e){}}
+/* a music-box style note on the music bus, at an absolute AudioContext time */
+function musicNote(f,at,dur,vol){if(S.muted||!AC||!MUSIC)return;try{const o1=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain(),g2=AC.createGain();
+  o1.type='triangle';o2.type='sine';o1.frequency.value=f;o2.frequency.value=f*2;g2.gain.value=.3;
+  g.gain.setValueAtTime(0.0001,at);g.gain.exponentialRampToValueAtTime(vol,at+.025);g.gain.setValueAtTime(vol*.75,at+Math.max(.06,dur*.55));g.gain.exponentialRampToValueAtTime(0.0001,at+dur);
+  o1.connect(g);o2.connect(g2);g2.connect(g);g.connect(MUSIC);o1.start(at);o2.start(at);o1.stop(at+dur+.05);o2.stop(at+dur+.05);}catch(e){}}
 const SFX={
   tap:()=>tone(660,0,.12,'sine',.1),
   pop:()=>{tone(520,0,.08,'sine',.14);tone(980,.05,.12,'sine',.1);},
@@ -286,20 +324,38 @@ if('speechSynthesis' in window){pickVoice();try{speechSynthesis.onvoiceschanged=
 function speak(text,force){
   if(!('speechSynthesis' in window))return;
   if(!force&&(S.muted||!S.voice))return;
-  try{speechSynthesis.cancel();
-    const clean=String(text).replace(/[^\p{L}\p{N}\s.,!?'’\-:;]/gu,' ').replace(/\s+/g,' ').trim();
-    if(!clean)return;
-    const u=new SpeechSynthesisUtterance(clean);
-    if(VOICE)u.voice=VOICE;u.lang=(VOICE&&VOICE.lang)||'en-US';
-    u.rate=S.slow?.85:.98;u.pitch=1.12;speechSynthesis.speak(u);}catch(e){}
+  const clean=String(text).replace(/[^\p{L}\p{N}\s.,!?'’\-:;]/gu,' ').replace(/\s+/g,' ').trim();
+  if(!clean)return;
+  const ss=speechSynthesis;
+  const go=()=>{try{
+      if(ss.paused)ss.resume();
+      const u=new SpeechSynthesisUtterance(clean);
+      if(VOICE)u.voice=VOICE;u.lang=(VOICE&&VOICE.lang)||'en-US';
+      u.rate=S.slow?.85:.98;u.pitch=1.12;
+      const est=1500+clean.length*(S.slow?95:80);
+      const done=()=>{clearTimeout(duckTimer);duckMusic(false);};
+      u.onend=done;u.onerror=done;
+      duckMusic(true);clearTimeout(duckTimer);
+      /* fallback: un-duck, and un-stick iOS speech if it never reports finishing */
+      duckTimer=setTimeout(()=>{duckMusic(false);try{if(ss.speaking&&!ss.pending)ss.cancel();}catch(e){}},est+4000);
+      ss.speak(u);
+    }catch(e){}};
+  try{
+    clearTimeout(speakTimer);
+    /* only cancel when something is actually playing, and give iOS a moment after cancel() before speak() */
+    if(ss.speaking||ss.pending){ss.cancel();speakTimer=setTimeout(go,150);}else go();
+  }catch(e){}
 }
+let speakTimer=0;
 let lastSay='';
-function say(text,spoken){
+function say(text,spoken,quiet){
   lastSay=spoken||text;
   const b=$('#bubbleText');b.textContent=text;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
+  if(quiet)return;
   const p=$('#pipWrap');p.classList.remove('talk');void p.offsetWidth;p.classList.add('talk');
   speak(lastSay);
 }
+function nudgePip(){const p=$('#pipWrap'),bb=$('#bubble');[p,bb].forEach(el=>{el.classList.remove('nudge');void el.offsetWidth;el.classList.add('nudge');});}
 onTap($('#btnHear'),()=>{ac();speak(lastSay,true);});
 
 /* ---------- art ---------- */
@@ -504,7 +560,7 @@ const levelOf=actId=>LEVELS.find(l=>l.acts.indexOf(actId)>=0).id;
 const levelStars=id=>lvl(id).acts.reduce((s,a)=>s+(S.stars[a]||0),0);
 const totalStars=()=>Object.keys(S.stars).reduce((s,k)=>s+(S.stars[k]||0),0);
 function starStr(n){let s='';for(let i=0;i<3;i++)s+=`<span class="${i<n?'on':'off'}">★</span>`;return `<div class="stars">${s}</div>`;}
-function updateTop(){$('#starCount').textContent='⭐ '+totalStars();$('#btnMute').textContent=S.muted?'🔇':'🔊';}
+function updateTop(){$('#starCount').textContent='⭐ '+totalStars();$('#btnMute').textContent=S.muted?'🔇':'🔊';try{if(S.muted&&SILENT)SILENT.pause();}catch(e){}setMusicLevel();}
 /* ---------- navigation ---------- */
 let backFn=null,cur=null;
 function setTop(title,back,ic){$('#title').textContent=title;backFn=back;const b=$('#btnBack');b.classList.toggle('hidden',!back);b.textContent=ic||'⬅️';updateTop();}
@@ -665,11 +721,12 @@ function actWash(){
      The timer only runs while she is scrubbing (pauses ~0.9s after the last movement), and a gentle
      "keep scrubbing" prompt plays after 2s idle. Time is wall-clock based, so many fingers or fast taps
      can never make it go faster than real time. */
-  const GOAL=20000,GRACE=900,PROMPT=2000;
+  const GOAL=20000,GRACE=900,PROMPT=2000,REPEAT=4000;
   const NOTES=[[392,.75],[392,.25],[440,1],[392,1],[523,1],[494,2],[392,.75],[392,.25],[440,1],[392,1],[587,1],[523,2],[392,.75],[392,.25],[784,1],[659,1],[523,1],[494,1],[440,2],[698,.75],[698,.25],[659,1],[523,1],[587,1],[523,2]];
-  const BEAT=400; /* 25 beats x 0.4s = one Happy Birthday every 10s, two times in 20s */
-  const starts=[];let acc=0;NOTES.forEach(n=>{starts.push(acc);acc+=n[1];});const SONG=acc*BEAT;
+  const BEAT=.4; /* seconds; 25 beats + 1 rest = ~10s per Happy Birthday, so about twice in 20s of washing */
+  const starts=[];let acc=0;NOTES.forEach(n=>{starts.push(acc);acc+=n[1];});const LOOP=(acc+1)*BEAT;
   const TIPS={5:'Five! Scrub your palms!',10:'Ten! Halfway there! Scrub between your fingers!',15:'Fifteen! Now the backs of your hands!'};
+  const REMIND=['Keep scrubbing! Rub rub rub!','Keep washing, Lenny Bean! Scrub scrub scrub!','Don’t stop! Keep rubbing your hands!','More bubbles! Keep scrubbing!'];
   const cols=[['#9BE58B','#5DB04C'],['#C7A6FF','#8E68E0'],['#FFC27A','#E39235'],['#8FD8FF','#3FA6DD']];
   const SPOTS=[[100,180],[76,228],[132,226],[58,74],[116,62],[300,180],[324,228],[268,226],[342,74],[284,62],[88,120],[312,120]];
   say('Time to wash our hands! Tap the soap to start.');
@@ -678,11 +735,11 @@ function actWash(){
       <div class="wdots" id="wdots">${Array.from({length:20},(_,i)=>`<span class="wdot">${i+1}</span>`).join('')}</div></div>
     <div class="hands-wrap" id="hw">${HANDS_SVG}<div class="foam-layer" id="foam"></div>
       <div class="wash-center"><button class="big-btn pinkb pulse soap-btn" id="soapBtn">🧼 Soap!</button><button class="big-btn rinse-btn hidden" id="rinseBtn">💧 Rinse!</button></div>
-      <div class="wash-hint hidden" id="washHint">👆 Rub rub rub!</div></div></div>`;
-  const zone=$('#washZone'),hw=$('#hw'),foam=$('#foam'),ring=$('#ring'),countEl=$('#washCount'),dots=$$('.wdot'),hint=$('#washHint');
+      <div class="wash-hint hidden" id="washHint">👆 Rub rub rub!</div><div class="remind hidden" id="remind">🧽 Keep scrubbing!</div></div></div>`;
+  const zone=$('#washZone'),hw=$('#hw'),foam=$('#foam'),ring=$('#ring'),countEl=$('#washCount'),dots=$$('.wdot'),hint=$('#washHint'),remind=$('#remind');
   const fit=()=>{if(!hw.isConnected){window.removeEventListener('resize',fit);return;}const r=stage.getBoundingClientRect(),top=$('.wash-top').getBoundingClientRect().height;const w=Math.max(220,Math.min(r.width-40,(r.height-top-46)*4/3));hw.style.width=w+'px';hw.style.height=(w*.75)+'px';};
   fit();window.addEventListener('resize',fit);
-  let phase='soap',scrubbed=0,lastScrub=0,lastTick=0,lastSec=0,noteI=0,lastPrompt=0,lastFoam=0,germs=[],nextSpawn=2500;
+  let phase='soap',scrubbed=0,lastScrub=0,lastAct=0,lastTick=0,lastSec=0,noteI=0,songT0=null,lastPrompt=0,prompts=0,idleShown=false,lastFoam=0,germs=[],nextSpawn=2500;
   const last={};
   function addGerm(){
     const used=germs.map(g=>g.spot);const free=SPOTS.map((s,i)=>i).filter(i=>used.indexOf(i)<0);if(!free.length)return;
@@ -700,7 +757,7 @@ function actWash(){
   function scrubAt(cx,cy,now){
     const r=hw.getBoundingClientRect();const px=cx-r.left,py=cy-r.top;
     if(px<-40||py<-40||px>r.width+40||py>r.height+40)return; /* only scrubbing on/near the hands counts */
-    lastScrub=now;hint.classList.add('hidden');zone.classList.remove('idle');
+    lastScrub=now;lastAct=now;hint.classList.add('hidden');if(idleShown){idleShown=false;prompts=0;remind.classList.add('hidden');zone.classList.remove('idle');musicBase=1;setMusicLevel();}
     if(now-lastFoam>70){lastFoam=now;const f=document.createElement('span');f.className='foam';const s=16+Math.random()*30;f.style.width=f.style.height=s+'px';f.style.left=(px/r.width*100)+'%';f.style.top=(py/r.height*100)+'%';foam.appendChild(f);if(foam.children.length>60)foam.firstChild.remove();}
     germs.slice().forEach(g=>{if(Math.hypot(g.x*r.width-px,g.y*r.height-py)<Math.max(48,r.width*.11))washGerm(g,now);});
   }
@@ -713,27 +770,41 @@ function actWash(){
   const stopScroll=e=>{if(e.target.closest&&e.target.closest('button'))return; /* let buttons (Soap, Rinse) receive their tap */ if(e.cancelable)e.preventDefault();};
   zone.addEventListener('touchstart',stopScroll,{passive:false});zone.addEventListener('touchmove',stopScroll,{passive:false});
   function drawProgress(){const s=Math.min(20,Math.floor(scrubbed/1000));countEl.textContent=s;ring.style.setProperty('--p',(scrubbed/GOAL).toFixed(3));dots.forEach((d,i)=>d.classList.toggle('on',i<s));}
+  /* Tune: scheduled ahead on the AudioContext clock, looping continuously from Soap until 20s are done.
+     It never stops for short pauses; it just gets a bit quieter while she is idle. */
+  function scheduleSong(){
+    if(!AC||AC.state!=='running'||S.muted){songT0=null;return;}
+    const now=AC.currentTime;
+    if(songT0===null){songT0=now+.12;noteI=0;}
+    const at=i=>songT0+Math.floor(i/NOTES.length)*LOOP+starts[i%NOTES.length]*BEAT;
+    if(at(noteI)<now-.25){songT0=now+.12-(at(noteI)-songT0);} /* fell behind (tab throttled): catch up without a burst */
+    while(at(noteI)<now+.4){const n=NOTES[noteI%NOTES.length];musicNote(n[0],Math.max(now,at(noteI)),n[1]*BEAT*.92,.2);noteI++;}
+  }
   function tick(){
     if(!hw.isConnected)return;const now=performance.now(),dt=Math.min(250,now-lastTick);lastTick=now;
     if(phase!=='scrub')return;
+    scheduleSong();
     const active=lastScrub&&now-lastScrub<=GRACE;
     zone.classList.toggle('paused',!active&&scrubbed>0);
     if(active){
       scrubbed=Math.min(GOAL,scrubbed+dt);
-      while(noteI<NOTES.length*2&&scrubbed>=(Math.floor(noteI/NOTES.length)*SONG+starts[noteI%NOTES.length]*BEAT)){const n=NOTES[noteI%NOTES.length];tone(n[0],0,n[1]*BEAT/1000*.9,'triangle',.07);noteI++;}
       if(scrubbed>=nextSpawn&&scrubbed<GOAL-3000){nextSpawn+=2500;if(germs.length<3)addGerm();}
       const sec=Math.floor(scrubbed/1000);
       if(sec>lastSec){lastSec=sec;dots[sec-1]&&dots[sec-1].classList.add('popnow');
         if(sec>=20){finishScrub();return;}
-        say(TIPS[sec]||(sec+'!'));}
+        if(TIPS[sec])say(TIPS[sec]);else say(sec+'!',null,true); /* speak only at 5, 10, 15 (and 20); show every number */
+      }
       drawProgress();
-    }else if(lastScrub&&now-lastScrub>PROMPT&&now-lastPrompt>6000){
-      lastPrompt=now;zone.classList.add('idle');hint.classList.remove('hidden');
-      say(pick(['Keep scrubbing! Rub rub rub!','Don’t stop, keep scrubbing!','More bubbles! Keep rubbing your hands!']));
+    }else if(now-lastAct>PROMPT&&(!idleShown||now-lastPrompt>(prompts<5?REPEAT:12000))){
+      /* she stopped (or hasn't started): big visible reminder + Pip bounces + says it, repeating while idle */
+      if(!idleShown){idleShown=true;zone.classList.add('idle');musicBase=.55;setMusicLevel();}
+      lastPrompt=now;prompts++;remind.classList.remove('hidden');remind.classList.remove('pop');void remind.offsetWidth;remind.classList.add('pop');
+      hint.classList.add('hidden');nudgePip();
+      say(REMIND[(prompts-1)%REMIND.length]);
     }
   }
   function finishScrub(){
-    phase='rinse';scrubbed=GOAL;drawProgress();zone.classList.remove('paused','idle');hint.classList.add('hidden');
+    phase='rinse';scrubbed=GOAL;drawProgress();zone.classList.remove('paused','idle');hint.classList.add('hidden');remind.classList.add('hidden');musicBase=1;setMusicLevel();
     SFX.good();germs.slice().forEach(g=>{g.hp=1;washGerm(g,performance.now()+999);});
     say('Twenty! You scrubbed for 20 whole seconds! Now tap Rinse to wash the bubbles away.');
     $('#rinseBtn').classList.remove('hidden');$('#rinseBtn').classList.add('pulse');
@@ -746,10 +817,10 @@ function actWash(){
     later(()=>{hw.classList.add('sparkle');},1400);later(finishAct,Math.max(3500,readMs(m)-800));
   });
   onTap($('#soapBtn'),()=>{
-    if(phase!=='soap')return;phase='scrub';ac();SFX.pop();$('#soapBtn').remove();
+    if(phase!=='soap')return;phase='scrub';unlockAudio();SFX.pop();$('#soapBtn').remove();lastAct=performance.now()+4000;/* give the intro time before the first reminder */songT0=null;musicBase=1;setMusicLevel();scheduleSong();
     const r=hw.getBoundingClientRect();bubbles(r.width*.25,r.height*.6,5);bubbles(r.width*.75,r.height*.6,5);
     for(let i=0;i<5;i++)addGerm();hint.classList.remove('hidden');lastTick=performance.now();
-    say('Oh, silly germs! Rub your fingers on the hands to scrub scrub scrub. Let’s count to 20!');
+    say('Rub your fingers on the hands to scrub! Let’s wash for 20!');
   });
   drawProgress();lastTick=performance.now();
   timers.push(setInterval(tick,100));
@@ -840,7 +911,7 @@ function openGrown(){
 (function(){
   const bg=$('#bg');for(let i=0;i<14;i++){const c=document.createElement('div');c.className='cell';const s=40+Math.random()*130;c.style.width=c.style.height=s+'px';c.style.left=Math.random()*100+'vw';c.style.animationDuration=(18+Math.random()*22)+'s';c.style.animationDelay=(-Math.random()*40)+'s';bg.appendChild(c);}
   $('#pipWrap').innerHTML=PIP;$('.pipbig').innerHTML=PIP;updateTop();
-  onTap($('#btnStart'),()=>{ac();SFX.good();$('#splash').remove();showHome();});
+  onTap($('#btnStart'),()=>{unlockAudio();SFX.good();$('#splash').remove();showHome();});
   document.addEventListener('gesturestart',e=>e.preventDefault());
 })();
 </script>
